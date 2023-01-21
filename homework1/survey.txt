@@ -1,0 +1,34 @@
+1. What is your name (as it appears officially at Reed)?
+
+Anna Wu
+
+2. Is there anything we should know when addressing you?
+(Pronouns? nickname?)
+
+My pronouns are "they/she," meaning both of those pronouns can be used interchangeably.
+
+3. In what year are you at Reed?
+
+I am currently a freshman at Reed!
+
+4. What is your major?  If you don't know yet, what are you considering?
+(If you are interested in the Math/CS and CS majors, please let us know.)
+
+I am a Computer Science major and that is the major I applied to when I applied to the college. 
+
+5. Why are you taking this class?
+
+I'm taking this class as a part of my major requirements, but more introspectively because I am very interested in programming and need to review what I've previously learned. 
+
+6. Have you ever programmed before?  If so, how much? in what language(s)?
+
+I have programmed before a little bit in Java, in which I coded a storage/retrieval system for my IB CompSci HL IA. However, it was only over the course of two weeks and I have not coded since. 
+
+7. What was the output when you ran test.py?
+
+8192
+
+8. Is there anything else we should know?
+
+I'm very excited to learn more about computer science! Even though I did it for four years in high school, the program was very underdeveloped so I unfortunately didn't retain a lot of the important information. 
+
