@@ -17,13 +17,13 @@ Instructions:
 
 Notes for playing: 
 
-Going to lectures has all the answers for each of the exams, use those to beat them
-Homework drops random amounts of knowledge each time, spawns in every 10 rounds of time passing
-I added cheat codes so you can reach the exams and other later-game features quicker without having to play the whole thing (ease for grading)
-time <integer> — passes the specified amount of time in the game
-buff – resets hunger and need to sleep
-know – increases knowledge by +100
-hap – increases happiness by +100
+- Going to lectures has all the answers for each of the exams, use those to beat them
+- Homework drops random amounts of knowledge each time, spawns in every 10 rounds of time passing
+- I added cheat codes so you can reach the exams and other later-game features quicker without having to play the whole thing (ease for grading)
+	- time <integer> — passes the specified amount of time in the game
+	- buff – resets hunger and need to sleep
+	- know – increases knowledge by +100
+	- hap – increases happiness by +100
 
 Features List: 
 - “me” command (2 points): Create a command that lets the player see their current status, including their health and/or whatever other attributes you’ve added.
