@@ -1,4 +1,5 @@
 All homeworks and projects for CS Fundamentals I. Involves:
+
     ° file and console input and output
     ° conditional execution, iteration, and exception handling
     ° program decomposition into procedures, functions, methods, and classes
