@@ -1,0 +1,32 @@
+READING text from STDIN. Hit ctrl-d when done entering text.
+DONE.
+reading text from stdin. hit ctrld when done entering text. done. hit
+ctrld when done entering text from stdin. done entering text. hit ctrld
+when done entering text. reading text from stdin. reading text. done
+. hit ctrld when done entering text from stdin. done entering text. done
+. done entering text. reading text from stdin. hit ctrld when done.
+done entering text. hit ctrld when done entering text from stdin. hit
+ctrld when done entering text from stdin. hit ctrld when done entering
+text from stdin. reading text from stdin. done entering text from stdin
+. hit ctrld when done. done. reading text. reading text from stdin.
+reading text. done entering text. hit ctrld when done. reading text
+from stdin. done. done entering text. done. reading text. hit ctrld
+when done entering text from stdin. done entering text. done. hit ctrld
+when done entering text. done. reading text from stdin. hit ctrld when
+done. reading text. done entering text. done. reading text from stdin
+. hit ctrld when done entering text from stdin. done. reading text from
+stdin. reading text from stdin. hit ctrld when done entering text from
+stdin. reading text. reading text from stdin. done. done entering text
+. hit ctrld when done. hit ctrld when done. done. done entering text
+. done. reading text from stdin. done. done. reading text. done entering
+text from stdin. hit ctrld when done entering text from stdin. hit ctrld
+when done. done. reading text. done. reading text from stdin. hit
+ctrld when done entering text from stdin. reading text from stdin. reading
+text. done entering text. done. done entering text. hit ctrld when
+done entering text. hit ctrld when done. hit ctrld when done entering
+text. reading text from stdin. hit ctrld when done. hit ctrld when done
+entering text from stdin. hit ctrld when done. done. reading text from
+stdin. reading text from stdin. hit ctrld when done entering text from
+stdin. done entering text from stdin. reading text. done. done. done
+. done entering text from stdin. hit ctrld when done. reading text.
+
