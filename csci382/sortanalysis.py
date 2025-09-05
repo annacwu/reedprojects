@@ -48,11 +48,15 @@ args = parser.parse_args()
 #   write your code below   #
 #############################
 
+# helper function to determine time it took to run
 def computeTime(lst, fctn):
     initialTime = time.time()
     fctn(lst)
     return time.time() - initialTime
 
+# uses nested for loops to run each sort the 
+# specified number of times and stores the results
+# in a matrix (list of lists)
 def runSorts(min, inc, max, run, fctns):
     resultMatrix = []
     nRow = ['N']
@@ -67,8 +71,8 @@ def runSorts(min, inc, max, run, fctns):
 
             trial = inputGenerator(i)
 
+            # if no --whichsorts parameter specified, run all
             if fctns is None:
-                # might give error 
                 if len(mergeTimes) < arrInd + 1:
                     mergeTimes.append(computeTime(trial, mergesort))
                     quickTimes.append(computeTime(trial, quicksort))
@@ -78,6 +82,7 @@ def runSorts(min, inc, max, run, fctns):
                     quickTimes[arrInd] += computeTime(trial, quicksort)
                     selectTimes[arrInd] += computeTime(trial, selectionsort)
 
+            # otherwise, run only the specified sorts
             else:
                 for func in fctns:
                     if func == 'mergesort':
@@ -96,6 +101,8 @@ def runSorts(min, inc, max, run, fctns):
                         else: 
                             selectTimes[arrInd] += computeTime(trial, selectionsort)
 
+        # compute average of each trial total in each spot of the matrix 
+        # (rounded to 5)
         if len(mergeTimes) > 1:
             mergeTimes[arrInd] = round(mergeTimes[arrInd] / run, 5)
         if len(quickTimes) > 1:
@@ -105,6 +112,7 @@ def runSorts(min, inc, max, run, fctns):
 
         arrInd += 1
 
+    # make the matrix by appending the lists of runtimes
     resultMatrix.append(nRow)
     arrInd = 1
     if len(mergeTimes) > 1:
@@ -119,6 +127,7 @@ def runSorts(min, inc, max, run, fctns):
 
     return resultMatrix
 
+# function that prints the matrix into a formatted table in terminal 
 def printTable(matrix):
     table = ""
     for i in range(0, len(matrix[0])):
