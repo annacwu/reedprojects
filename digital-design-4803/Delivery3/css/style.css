@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Tangerine:wght@400;700&display=swap');
+
+body {
+    font-family: "Newsreader", serif;
+    background-color: #E3DEDE;
+    color: #1F1C22;
+}
+
+h1, h4 {
+    font-family: "Tangerine", cursive;
+}
+
+
+p{
+    color: #46404F;
+}
+.navbar-brand img {width: 28px;}
+.navbar-brand {font-family: "Tangerine", cursive;}
+
+.modal-title {
+    font-family: "Newsreader", serif; 
+    font-weight: 400;
+}
+
+footer{
+    height: 150px;
+}

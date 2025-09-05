@@ -1,0 +1,2 @@
+READING text from STDIN. Hit ctrl-d when done entering text.
+DONE.

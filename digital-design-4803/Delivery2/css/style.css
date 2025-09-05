@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Playfair+Display:ital,wght@0,400..900&display=swap');
+
+* {
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Playfair Display", serif;
+    background-color: aliceblue;
+    color: #2c313f;
+}
+
+main, header {
+    margin: 0 auto;
+    width: 83.33%;
+}
+
+h1 {
+    line-height: 80px;
+    font-size: 2.87em;
+    font-family: "Cinzel", serif;
+}
+
+h1 + h1 {
+    margin-bottom: 20px;
+}
+
+h2 {
+    text-transform: lowercase; 
+    /* NOTE: the font has all the letters look uppercase by design, but by having this here it makes all of them the same height as compared to the h1 as you can see in the display */
+    line-height: 60px;
+    font-size: 1.75em;
+    font-weight: 600;
+    font-family: "Cinzel", serif;
+}
+
+h4 {
+    padding: 20px;
+}
+
+a {
+    text-decoration: none;
+    color: #2c313f;
+}
+
+section {
+    margin-top: 40px;
+    width: 40%;
+    margin-bottom: 50px;
+}
+
+div {
+    margin-bottom: 80px;
+    display: flex;
+    justify-content: space-between;
+}
+
+div img {
+    width: 22%;
+    border: 1px solid black;
+    margin: 0;
+    transition-property: width, border;
+    transition-duration: 250ms, 250ms;
+}
+
+div img:hover{
+    width: 30%;
+    border: 3px solid white;
+}
+
+footer{
+    width: 100%;
+    height: 150px;
+    background-color: lightblue;
+}
+
+img{
+    width: 60%; 
+    display: block; 
+    margin: 0 auto;
+    border: 1px solid black;
+    margin-bottom: 50px;
+    margin-top: 30px;
+} 
+
+@media (max-width:768px) {
+    section { width: 65%;}
+    h1, h2 {line-height: 40px;}
+    body {font-size: 12px};
+
+}
