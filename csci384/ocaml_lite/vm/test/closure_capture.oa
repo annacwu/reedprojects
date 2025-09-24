@@ -1,0 +1,23 @@
+# Expect: Test1 Test2
+
+main:
+    sconst "Test"
+    close 2 1 func
+    const 1
+    over 0
+    call
+    sconst " "
+    concat
+    const 2
+    over 0
+    call
+    concat
+    pop1
+    print
+
+func:
+    env 0
+    env 1
+    itos
+    concat
+    ret

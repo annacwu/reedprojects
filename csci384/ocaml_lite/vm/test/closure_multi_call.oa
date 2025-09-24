@@ -1,0 +1,20 @@
+# Expect: 10
+
+main:
+    close 1 0 func
+    const 3
+    over 0
+    call
+    const 2
+    over 0
+    call
+    add
+    pop1
+    itos
+    print
+
+func:
+    env 0
+    const 2
+    mul
+    ret

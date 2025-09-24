@@ -1,0 +1,4 @@
+(lang dune 3.20)
+(name ocaml_lite)
+(sections (lib .) (bin ../../bin) (doc ../../doc/ocaml_lite))
+(files (lib (META dune-package opam)) (bin (ocaml_lite)) (doc (README.md)))

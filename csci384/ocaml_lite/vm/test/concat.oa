@@ -1,0 +1,7 @@
+# Expect: Test string
+
+main:
+    sconst "Test "
+    sconst "string"
+    concat
+    print

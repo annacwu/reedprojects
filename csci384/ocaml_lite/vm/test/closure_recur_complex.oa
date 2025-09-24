@@ -1,0 +1,33 @@
+# Expect: 162
+
+main:
+    const 4
+    const 3
+    const 2
+    const 2
+    closerec 5 2 func
+    call
+    call
+    itos
+    print
+
+func:
+    env 1
+    env 4
+    neq
+    const 6
+    br
+    env 0
+    env 3
+    mul
+    ret
+    env 4
+    const 1
+    sub
+    env 3
+    env 3
+    mul
+    env 2
+    call
+    call
+    ret

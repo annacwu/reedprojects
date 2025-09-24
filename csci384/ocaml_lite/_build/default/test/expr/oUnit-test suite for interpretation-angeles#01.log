@@ -1,0 +1,15 @@
+2025-09-22T23:34:23+00:00 angeles#01 I: Start test test suite for interpretation:0:expressions:0:constants:0:integer.
+2025-09-22T23:34:23+00:00 angeles#01 I: Test test suite for interpretation:0:expressions:0:constants:0:integer is successful.
+2025-09-22T23:34:23+00:00 angeles#01 I: End test test suite for interpretation:0:expressions:0:constants:0:integer.
+2025-09-22T23:34:23+00:00 angeles#01 I: Start test test suite for interpretation:0:expressions:1:operators:1:minus.
+2025-09-22T23:34:23+00:00 angeles#01 I: Test test suite for interpretation:0:expressions:1:operators:1:minus is successful.
+2025-09-22T23:34:23+00:00 angeles#01 I: End test test suite for interpretation:0:expressions:1:operators:1:minus.
+2025-09-22T23:34:23+00:00 angeles#01 I: Start test test suite for interpretation:0:expressions:1:operators:2:times.
+2025-09-22T23:34:23+00:00 angeles#01 I: Test test suite for interpretation:0:expressions:1:operators:2:times is successful.
+2025-09-22T23:34:23+00:00 angeles#01 I: End test test suite for interpretation:0:expressions:1:operators:2:times.
+2025-09-22T23:34:23+00:00 angeles#01 I: Start test test suite for interpretation:0:expressions:1:operators:4:integer divide.
+2025-09-22T23:34:23+00:00 angeles#01 I: Test test suite for interpretation:0:expressions:1:operators:4:integer divide is successful.
+2025-09-22T23:34:23+00:00 angeles#01 I: End test test suite for interpretation:0:expressions:1:operators:4:integer divide.
+2025-09-22T23:34:23+00:00 angeles#01 I: Start test test suite for interpretation:0:expressions:1:operators:6:neg.
+2025-09-22T23:34:23+00:00 angeles#01 I: Test test suite for interpretation:0:expressions:1:operators:6:neg is successful.
+2025-09-22T23:34:23+00:00 angeles#01 I: End test test suite for interpretation:0:expressions:1:operators:6:neg.

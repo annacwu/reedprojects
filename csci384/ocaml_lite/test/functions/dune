@@ -1,0 +1,3 @@
+(test
+ (name functions_test)
+ (libraries ocaml_lite ocaml_lite_test_utils ounit2))

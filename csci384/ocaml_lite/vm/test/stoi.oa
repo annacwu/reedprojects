@@ -1,0 +1,7 @@
+# Expect: -21
+
+main:
+    sconst "-21"
+    stoi
+    itos
+    print

@@ -1,0 +1,11 @@
+lib: [
+  "_build/install/default/lib/ocaml_lite/META"
+  "_build/install/default/lib/ocaml_lite/dune-package"
+  "_build/install/default/lib/ocaml_lite/opam"
+]
+bin: [
+  "_build/install/default/bin/ocaml_lite"
+]
+doc: [
+  "_build/install/default/doc/ocaml_lite/README.md"
+]

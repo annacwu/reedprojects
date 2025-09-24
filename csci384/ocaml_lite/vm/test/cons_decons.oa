@@ -1,0 +1,16 @@
+# Expect: 0
+
+main:
+    const 1
+    const 2
+    cons 23 2
+    decons 2
+    const 2
+    neq
+    over 0
+    const 1
+    neq
+    and
+    pop1
+    itos
+    print

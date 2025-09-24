@@ -1,0 +1,12 @@
+# Expect: 1
+
+main:
+    const 0
+    const 19
+    br
+    const 1
+    const 9
+    jump
+    const 2
+    itos
+    print

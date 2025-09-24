@@ -1,0 +1,5 @@
+# Expect: Output
+
+main:
+    sconst "Output"
+    print

@@ -1,0 +1,11 @@
+# Expect: 0
+
+main:
+    const 1
+    const 2
+    cons 23 2
+    gettag
+    const 23
+    neq
+    itos
+    print

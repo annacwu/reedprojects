@@ -1,0 +1,14 @@
+# Expect: 4
+
+main:
+    const 1
+    const 2
+    const 3
+    const 4
+    pop1
+    pop1
+    over 1
+    itos
+    print
+    pop1
+    pop1

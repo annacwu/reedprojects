@@ -1,0 +1,10 @@
+# Expect: Finished
+
+main:
+    const 11
+    jump
+    const 1
+    itos
+    print
+    sconst "Finished"
+    print

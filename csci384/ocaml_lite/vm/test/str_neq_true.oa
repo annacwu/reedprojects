@@ -1,0 +1,9 @@
+# Expect: 0
+
+main:
+    sconst "test"
+    sconst "string"
+    neq
+    not
+    itos
+    print

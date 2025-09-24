@@ -1,0 +1,8 @@
+# Expect: 0
+
+main:
+    const 0
+    const 0
+    or
+    itos
+    print

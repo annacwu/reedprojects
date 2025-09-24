@@ -1,0 +1,8 @@
+# Expect: 0
+
+main:
+    sconst "test"
+    sconst "test"
+    neq
+    itos
+    print

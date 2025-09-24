@@ -1,0 +1,19 @@
+# Expect: 1
+
+main:
+    const 1
+    const 2
+    const 3
+    const 4
+    const 5
+    close 2 0 func
+    callnp 2 2
+    over 1
+    itos
+    print
+
+func:
+    env 0
+    env 1
+    sub
+    ret

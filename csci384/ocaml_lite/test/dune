@@ -1,0 +1,6 @@
+(test
+ (name ocaml_lite_test)
+ (libraries ocaml_lite ounit2))
+
+(cram
+  (deps %{bin:ocaml_lite} ../vm/release/ovm))

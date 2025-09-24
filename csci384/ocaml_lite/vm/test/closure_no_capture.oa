@@ -1,0 +1,14 @@
+# Expect: 6
+
+main:
+    const 3
+    close 1 0 func
+    call
+    itos
+    print
+
+func:
+    env 0
+    const 2
+    mul
+    ret
