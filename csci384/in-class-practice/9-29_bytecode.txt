@@ -1,0 +1,92 @@
+1 + 2 * 3
+
+CONST 1
+CONST 2
+CONST 3
+MUL
+ADD
+
+1 < 2
+
+CONST 1
+CONST 2
+LT
+
+1 + 4 < 2 * 3
+
+CONST 1
+CONST 4
+ADD
+CONST 2
+CONST 3
+MUL
+LT
+
+if 1 < 2 && 3 < 2 then 3 else 4 * 5
+
+CONST 1
+CONST 2
+LT
+CONST 3
+CONST 2
+LT
+AND
+CONST ?? (offset)
+BR
+CONST 4
+CONST 5
+MUL
+CONST ??
+JUMP
+CONST 3
+
+if 2 < 1 then 3 * 4 else if 5 < 6 then 7 mod 8 else 9 / 10
+
+CONST 2
+CONST 1
+LT
+CONST ??
+BR
+CONST 5
+CONST 6
+LT
+CONST ??
+BR
+CONST 9
+CONST 10
+DIV
+CONST ??
+JUMP
+CONST 7
+CONST 8
+MOD
+CONST ??
+JUMP
+CONST 3
+CONST 4
+MUL
+
+Multiway conditions - Evaluate as though they are if-else statements, like this (simplified):
+
+  TEST1
+  BR
+  TEST2
+  BR
+  TEST3
+  BR
+  ....
+  BODY3
+  JUMP
+  BODY2
+  JUMP
+  BODY1
+
+While loops: 
+
+  E1
+  CONST ??
+  BR (if e1 is false, it jumps to the end)
+  E2
+  CONST ??
+  JUMP (jumps back to E1)
+  (this is end of loop where br would jump)

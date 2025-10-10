@@ -1,0 +1,13 @@
+(* Finding ambiguity *)
+
+1. P -> e | (P) | PP 
+ambiguous because P is in the left and rightmost position in PP
+
+P -> e | (P) | (P)P
+
+2. S -> a | a S | a S b
+ambigious because aaab can be done S -> aS -> aaSb -> aaab or S -> aSb -> aaSb -> aaab
+
+S -> AB
+A -> Aa | a
+B -> aB | b | e

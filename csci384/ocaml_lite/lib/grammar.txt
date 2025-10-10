@@ -1,20 +1,11 @@
-Original grammar:
+Ocaml-lite grammar:
 
-  E ::= E + E
-      | E - E
-      | E * E
-      | E / E
-      | E mod E
-      | ~ E
-      | ( E ) 
-      | $int
+  I ::= if I then I else I | O 
+  O ::= O || C | A
+  A ::= A && C | C
+  C ::= E < E | E = E | E 
+  E ::= E + T | E - T | T
+  T ::= T * F | T / F | T mod F | F 
+  F ::= ~ F | not F | ( S ) | $int | $bool | () 
   $int = [0-9]+
-
-
-Disambiguated grammar: 
-
-   E ::= E + T | E - T | T
-   T ::= T * F | T / F | T mod F | F 
-   F ::= ~ F | P
-   P ::= ( E ) | $int 
-   $int = [0-9]+
+  $bool = true | false

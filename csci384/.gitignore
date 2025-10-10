@@ -1,0 +1,21 @@
+# Dune build artifacts
+**/_build/
+*.install
+
+# Mac junk
+.DS_Store
+
+# Opam local switch (if you ever create one in-project)
+.opam/
+
+# VM build outputs
+vm/release/
+ovm
+
+# OCaml compiler intermediates
+*.cmi
+*.cmo
+*.cmx
+*.o
+*.a
+

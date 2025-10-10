@@ -4,13 +4,15 @@ type id = string
 (** An identifer in OCaml-lite. We'll use this when we add let-bindings to the
     language. *)
 
-type typ
-(** A type (int, string, etc.). For now we only have integers so we don't need
-    any types, but soon we'll add booleans and we'll need to be able to
-    distinguish between integer and boolean expressions. Later on we'll add more
-    types. *)
+type typ =
+  | Int
+  | Bool
+  | Unit
 
-let typ_to_str (_t : typ) : string = failwith "FILL IN"
+let typ_to_str (_t : typ) : string = match _t with
+  | Int -> "Int"
+  | Bool -> "Bool"
+  | Unit -> "()"
 
 type param
 (** A parameter appearing an an argument list. This will be needed once we add
@@ -29,11 +31,17 @@ type params = param list
 let params_to_str (ps : params) : string =
   String.concat " " (List.map param_to_str ps)
 
-(** Literals. For now we have only integer literals. *)
-type constant = CInt of int
+(** Literals **) (** IS IT RIGHT TO HAVE THESE AS LITERALS make these as same constructor *)
+type constant = 
+  | CInt of int
+  | CBool of bool
+  | CUnit
 
 (** Represent a literal as a string. *)
-let constant_to_str : constant -> string = function CInt i -> string_of_int i
+let constant_to_str : constant -> string = function
+  | CInt i -> string_of_int i
+  | CBool b -> string_of_bool b
+  | CUnit -> "()"
 
 (** Binary operations. *)
 type binop =
@@ -42,6 +50,10 @@ type binop =
   | BMul  (** * *)
   | BDiv  (** / *)
   | BMod  (** mod *)
+  | BAnd (** && **)
+  | BOr (** || **)
+  | BLt (** < **)
+  | BEq (** = **)
 
 (** Represent a binary operation as a string. *)
 let binop_to_str : binop -> string = function
@@ -50,12 +62,20 @@ let binop_to_str : binop -> string = function
   | BMul -> "*"
   | BDiv -> "/"
   | BMod -> "mod"
+  | BAnd -> "&&"
+  | BOr -> "||"
+  | BLt -> "<"
+  | BEq -> "="
 
 (** Unary operation. *)
-type unop = UNegate  (** ~ *)
+type unop = 
+  | UNegate  (** ~ **)
+  | UNot (** not **)
 
 (** Represent a unary operation as a string. *)
-let unop_to_str : unop -> string = function UNegate -> "~"
+let unop_to_str : unop -> string = function 
+  | UNegate -> "~"
+  | UNot -> "not"
 
 (** OCaml-lite expressions. *)
 type expr =
@@ -64,6 +84,7 @@ type expr =
   | EUnop of unop * expr  (** <op> e *)
   | EVar of id  (** x *)
   | EConst of constant  (** c *)
+  | ECond of expr * expr * expr (** if/then/else e *)
 
 (** Represent an expression as a string. *)
 let rec expr_to_str : expr -> string = function
@@ -73,8 +94,9 @@ let rec expr_to_str : expr -> string = function
   | EUnop (o, a) -> unop_to_str o ^ " (" ^ expr_to_str a ^ ")"
   | EVar v -> v
   | EConst c -> constant_to_str c
+  | ECond (e1, e2, e3) -> "if" ^ expr_to_str e1 ^ "then" ^ expr_to_str e2 ^ "else" ^ expr_to_str e3 
 
-(** A top-level binding. We don't have bindings in the language yet, but my test
+(** A top-level binding.  We don't have bindings in the language yet, but my test
     code is more consistent if we artificially wrap expressions in a single
     top-level binding from the beginning. *)
 type binding = BLet of id * params * typ option * expr

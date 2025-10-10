@@ -5,25 +5,25 @@ let constants =
   "constants"
   >::: List.map tc_expr
          [
-           ("int", "2", Some (failwith "Write 'int' in your AST types"));
-           ("true", "true", Some (failwith "Write 'bool' in your AST types"));
-           ("false", "false", Some (failwith "Write 'bool' in your AST types"));
+           ("int", "2", Some (Int));
+           ("true", "true", Some (Bool));
+           ("false", "false", Some (Bool));
          ]
 
 let operators =
   "operators"
   >::: List.map tc_expr
          [
-           ("plus pass", "3 + 4", Some (failwith "Fill in 'int' in AST"));
+           ("plus pass", "3 + 4", Some (Int));
            ("plus arg fail", "2 + true", None);
-           ("minus pass", "3 - 4", Some (failwith "Fill in 'int' in AST"));
+           ("minus pass", "3 - 4", Some (Int));
            ("minus arg fail", "2 - true", None);
-           ("lt pass", "3 < 4", Some (failwith "Fill in 'bool' in AST"));
+           ("lt pass", "3 < 4", Some (Bool));
            ("lt arg fail", "() < 5", None);
-           ("eq pass int", "3 = 4", Some (failwith "Fill in 'bool in AST"));
+           ("eq pass int", "3 = 4", Some (Bool));
            ( "eq pass bool",
              "true = true",
-             Some (failwith "Fill in 'bool' in AST") );
+             Some (Bool) );
            ("eq arg fail", "1 = ()", None);
          ]
 
@@ -33,7 +33,7 @@ let if_expr =
          [
            ( "pass",
              "if true then 2 else 3",
-             Some (failwith "Fill in 'int' in AST") );
+             Some (Int) );
            ("bad condition", "if 1 then 2 else 3", None);
          ]
 

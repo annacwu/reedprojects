@@ -5,18 +5,18 @@ open Ocaml_lite.Interpret
 let constants =
   "constants"
   >::: List.map interp_expr_test
-         [ ("bool", failwith "Fill in with value 'false'", "false") ]
+         [ ("bool", VBool false, "false") ]
 
 let operators =
   "operators"
   >::: List.map interp_expr_test
          [
-           ("lt true", failwith "Value 'true'", "0 < 1");
-           ("eq int", failwith "Value 'true'", "0 = 0");
-           ("eq bool", failwith "Value 'true'", "false = false");
-           ("and true", failwith "Value 'true'", "true && true");
-           ("or true", failwith "value 'true'", "false || true");
-           ("not true", failwith "Value 'false'", "not true");
+           ("lt true", VBool true, "0 < 1");
+           ("eq int", VBool true, "0 = 0");
+           ("eq bool", VBool true, "false = false");
+           ("and true", VBool true, "true && true");
+           ("or true", VBool true, "false || true");
+           ("not true", VBool false, "not true");
          ]
 
 let if_exprs =

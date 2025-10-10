@@ -1,0 +1,32 @@
+1. Balanced paretheses:
+
+E -> (E) | EE | e
+
+2. a's followed by b's
+
+E -> AB
+A -> a | AA | e 
+B -> b | BB | e
+
+3. more a's than b's
+
+E -> aE | aEb | a
+
+4. if statements
+
+// from the lecture info
+// E -> E + E | E * E | - E | ( E ) | int
+// C -> E < E | E = E 
+
+(note C represents conditional statements, A represents arithmetic)
+
+E -> CC
+C -> A | e
+
+// class solution: 
+
+If_body -> 
+    | E 
+    | if C then
+        If_body
+        else If_body

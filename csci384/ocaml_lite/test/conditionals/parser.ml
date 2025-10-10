@@ -29,8 +29,8 @@ let constant_tests =
   "constants"
   >::: List.map make_expr_ast_str
          [
-           ("true", failwith "Describe true in your AST types", "true");
-           ("false", failwith "Describe false in your AST types", "false");
+           ("true", EConst(CBool(true)), "true");
+           ("false", EConst(CBool(false)), "false");
          ]
 
 let precedence_tests =
@@ -66,7 +66,7 @@ let expr_basic_tests =
   >::: List.map make_expr_ast_str
          [
            ( "if",
-             failwith "Describe this expression in your AST types",
+             ECond(EConst (CBool true), EConst(CInt 1), EConst(CInt 2)),
              "if true then 1 else 2" );
          ]
 

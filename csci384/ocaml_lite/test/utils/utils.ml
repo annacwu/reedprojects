@@ -82,7 +82,10 @@ let forget_types (_e : expr) : expr =
   failwith "FILL IN: Convert the AST to a version without types"
 
 let compare_value (v1 : value) (v2 : value) : bool =
-  match (v1, v2) with VInt i1, VInt i2 -> i1 = i2
+  match (v1, v2) with 
+    | VInt i1, VInt i2 -> i1 = i2
+    | VBool b1, VBool b2 -> b1 = b2
+    | _ -> failwith "Unexpected value"
 
 let interp_expr_test (inp : string * value * string) : test =
   let label, v, source = inp in

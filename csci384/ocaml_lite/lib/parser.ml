@@ -35,7 +35,45 @@ let expect (exp : token) : token list -> token list = function
  * Expressions *
  ***************)
 
-  let rec parse_expr (source: token list) : expr * token list =
+ let rec parse_if (source: token list) : expr * token list = match source with
+    | If :: rest -> 
+      let (cond, r1) = parse_or rest in 
+      (match r1 with
+        | Then :: rest -> 
+          let (body, r2) = parse_or rest in 
+          (match r2 with
+            | Else :: rest -> let (ebody, r3) = parse_or rest in 
+            (ECond(cond, body, ebody), r3)
+            | _ -> raise (ParseError "Expected else"))
+        | _ -> raise (ParseError "Expected then"))
+    | _ -> parse_or source
+
+  and parse_or (source: token list) : expr * token list = 
+    let rec help acc src = match src with
+      | Or :: rest -> 
+        let (t, r) = parse_and rest in 
+        help (EBinop(acc, BOr, t)) r
+      | ts -> (acc, ts) in let (t, r) = parse_and source in help t r
+  
+  and parse_and (source: token list) : expr * token list = 
+    let rec help acc src = match src with
+      | And :: rest -> 
+        let (t, r) = parse_comp rest in 
+        help (EBinop(acc, BAnd, t)) r
+      | ts -> (acc, ts) in let (t, r) = parse_comp source in help t r
+  
+  and parse_comp (source: token list) : expr * token list = 
+    let (e1, src) = parse_expr source in
+    match src with
+    | Lt :: rest -> 
+      let (e2, r) = parse_expr rest in 
+      (EBinop (e1, BLt, e2), r)
+    | Eq :: rest ->
+      let (e2, r) = parse_expr rest in 
+      (EBinop(e1, BEq, e2), r) 
+    | _ -> parse_expr source 
+  
+  and parse_expr (source: token list) : expr * token list =
     let rec help acc src = match src with
       | Plus :: rest -> 
         let (t, r) = parse_term rest in
@@ -59,24 +97,30 @@ let expect (exp : token) : token list -> token list = function
       | ts -> (acc, ts) in let (t, r) = parse_factor source in help t r
 
   and parse_factor (source: token list) : expr * token list = match source with
-      | Negate :: rest -> 
-        let (t, r) = parse_parens rest in
-        (EUnop(UNegate, t), r)
-      | _ -> parse_parens source
-
-  and parse_parens (source: token list) : expr * token list = match source with
-    | LParen :: rest ->
-      let (t, r) = parse_expr rest in 
-      (match r with
-        | RParen :: rest -> (t, rest)
-        | _ -> raise (ParseError "Expected )"))
+    | Negate :: rest -> 
+      let (t, r) = parse_factor rest in
+      (EUnop(UNegate, t), r)
+    | Not :: rest -> 
+      let (t, r) = parse_factor rest in
+      (EUnop(UNot, t), r)
+    | LParen :: rest -> (
+        match rest with
+        | RParen :: rest -> (EConst(CUnit), rest)
+        | _ ->
+            let (t, r) = parse_if rest in
+            match r with
+            | RParen :: rest -> (t, rest)
+            | _ -> raise (ParseError "Expected )")
+      )
     | Int i :: rest -> (EConst(CInt(i)), rest)
-    | _ -> raise (ParseError "Expected <int> or (")
+    | True :: rest -> (EConst(CBool(true)), rest)
+    | False :: rest -> (EConst(CBool(false)), rest)
+    | If :: _ -> parse_if source
+    | _ -> raise (ParseError ("Unexpected expression: " ^ (String.concat " " (List.map tok_to_str source))))
 
   let expr (source: token list) : expr * token list = 
-    match parse_expr source with
-    | (expr, []) -> (expr, source)
-    | _ -> raise (ParseError "Expected end-of-input")
+    parse_if source
+    
     
 
 
