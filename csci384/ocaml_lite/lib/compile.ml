@@ -42,21 +42,45 @@ module Codes = struct
   let error = 0xF3
 end
 
+type context = (id * int) list
+
 (** Compile an expression. *)
-let rec compile_expr (ex : expr) : bytes =
+let rec compile_expr (ex : expr) (sp: int) (env: context) : bytes =
   match ex with
-  | EApp (_, _) -> failwith "Can't compile calls yet"
-  | EBinop (e1, op, e2) -> compile_binop e1 op e2
-  | EUnop (op, e) -> compile_unop op e
-  | EVar _ -> failwith "Can't compile variables yet"
-  | EConst c -> compile_const c
-  | ECond(e1,e2,e3) -> compile_cond e1 e2 e3
+  | EApp (e1, e2) -> compile_app e1 e2 sp env
+  | EBinop (e1, op, e2) -> compile_binop e1 op e2 sp env
+  | EUnop (op, e) -> compile_unop op e sp env
+  | EVar v -> compile_var v env
+  | EConst c -> compile_const c 
+  | ECond(e1,e2,e3) -> compile_cond e1 e2 e3 sp env
+  | ELet(id, _, t, e1,e2) -> compile_bind id t e1 e2 sp env
+
+and compile_app (_e1: expr) (_e2: expr) (sp: int) (env: context) : bytes = 
+  let func = compile_expr _e1 sp env in
+  let arg = compile_expr _e2 (sp+1) env in
+  Bytes.cat func arg
+
+and compile_var (v: id) (env: context) : bytes = match v with 
+  | "print_string" -> let op = Bytes.create 1 in let () = Bytes.set_uint8 op 0 Codes.print in op
+  | "string_to_int" -> let op = Bytes.create 1 in let () = Bytes.set_uint8 op 0 Codes.stoi in op
+  | "int_to_string" -> let op = Bytes.create 1 in let () = Bytes.set_uint8 op 0 Codes.itos in op
+  | _ -> 
+    let off = List.assoc v env in
+    let o = Bytes.create 2 in 
+    let () = Bytes.set_uint8 o 0 Codes.over in 
+    let () = Bytes.set_uint8 o 1 off in o
+
+and compile_bind (_id: id) (_t: typ option) (_e1: expr) (_e2: expr) (sp: int) (env: context) : bytes =
+  let bind = compile_expr _e1 sp env in
+  let new_env = (_id, sp) :: env in 
+  let ex = compile_expr _e2 (sp+1) new_env in
+  let res = Bytes.cat bind ex in res
 
 (** Compile a conditional statement *)
-and compile_cond (_e1: expr) (_e2: expr)(_e3: expr) : bytes =
-  let cond = compile_expr _e1 in
-  let tbody = compile_expr _e2 in
-  let ebody = compile_expr _e3 in
+and compile_cond (_e1: expr) (_e2: expr)(_e3: expr) (sp: int) (env: context) : bytes =
+  let cond = compile_expr _e1 sp env in
+  let tbody = compile_expr _e2 sp env in
+  let ebody = compile_expr _e3 (sp + 1) env in
   (* extend the condition to allow for a const [offset for instructions skipped] and br instruction *)
   let if_instr = Bytes.extend cond 0 10 in
   let () = Bytes.set_uint8 if_instr (Bytes.length cond) Codes.const in
@@ -75,9 +99,9 @@ and compile_cond (_e1: expr) (_e2: expr)(_e3: expr) : bytes =
   res
 
 (** Compile a binary operation. *)
-and compile_binop (_e1 : expr) (_op : binop) (_e2 : expr) : bytes =
-  let left = compile_expr _e1 in
-  let right = compile_expr _e2 in
+and compile_binop (_e1 : expr) (_op : binop) (_e2 : expr) (sp: int) (env: context) : bytes =
+  let left = compile_expr _e1 sp env in
+  let right = compile_expr _e2 (sp + 1) env in
   let binary = Bytes.cat left right in
   let res = Bytes.extend binary 0 1 in
   match _op with
@@ -108,10 +132,13 @@ and compile_binop (_e1 : expr) (_op : binop) (_e2 : expr) : bytes =
     | BEq -> 
       let () = Bytes.set_uint8 res (Bytes.length binary) Codes.eq in
       res
+    | BCat ->
+      let () = Bytes.set_uint8 res (Bytes.length binary) Codes.concat in
+      res
     
 (** Compile a unary operation. *)
-and compile_unop (_op : unop) (_e : expr) : bytes =
-  let const = compile_expr _e in
+and compile_unop (_op : unop) (_e : expr) (sp: int) (env: context) : bytes =
+  let const = compile_expr _e sp env in
   let res = Bytes.extend const 0 1 in
   match _op with
     | UNegate -> 
@@ -138,22 +165,30 @@ and compile_const (_c : constant) : bytes =
     | CUnit ->
       let () = Bytes.set_int64_be const 1 (Int64.of_int 0) in
       const
-
+    | CString s ->
+      let stringbytes = Bytes.of_string s in
+      let sconst = Bytes.extend stringbytes 1 1 in 
+      let () = Bytes.set_uint8 sconst 0 Codes.sconst in
+      sconst
 
 
 (** Compile an OCaml-lite program. *)
-let compile (prog : program) : bytes =
+let rec compile (prog : program) : bytes =
   let res =
     match prog with
     | [ BLet (_, [], _, EApp (EVar ps, EApp (EVar soi, expr))) ] ->
         if ps <> "print_string" || soi <> "string_of_int" then
           failwith "Unexpected program structure"
         else
-          let bs = compile_expr expr in
+          let bs = compile_expr expr 0 [] in
           let r = Bytes.extend bs 0 2 in
           let () = Bytes.set_uint8 r (Bytes.length bs) Codes.itos in
           let () = Bytes.set_uint8 r (Bytes.length bs + 1) Codes.print in
           r
+    (* | BLet(id, [], _, expr) :: rest -> 
+      let e = compile_expr expr 0 [] in 
+      let new_env: context = (id, sp) :: env in 
+      if rest = [] then e else compile rest (sp + 1) new_env  *)
     | _ -> failwith "Unexpected program structure"
   in
   (* Write out the bytecode magic number. *)

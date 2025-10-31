@@ -55,7 +55,7 @@ let tc_expr (inp : string * string * typ option) : test =
     let p, r = parse_enter expr prog in
     match r with
     | [] -> (
-        let t = typecheck_expr p in
+        let t = typecheck_expr p [] in
         match output with
         | None -> assert_failure "Program typechecked but shouldn't have"
         | Some t2 -> assert_bool "Inferred the wrong type" (t == t2))
@@ -71,7 +71,7 @@ let tc_program (inp : string * string * bool) : test =
   let label, prog, pass = inp in
   label >:: fun _ ->
   try
-    let _ = typecheck (parse prog) in
+    let _ = typecheck (parse prog) [] in
     assert_bool "program typechecked but shouldn't have" pass
   with
   | TypeError _ -> assert_bool "program failed typechecking" (not pass)
@@ -85,6 +85,9 @@ let compare_value (v1 : value) (v2 : value) : bool =
   match (v1, v2) with 
     | VInt i1, VInt i2 -> i1 = i2
     | VBool b1, VBool b2 -> b1 = b2
+    | VString v1, VString v2 -> v1 = v2
+    | VUnit, VUnit -> true
+    | VBuiltin, VBuiltin -> true
     | _ -> failwith "Unexpected value"
 
 let interp_expr_test (inp : string * value * string) : test =

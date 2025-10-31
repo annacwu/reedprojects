@@ -6,7 +6,7 @@ let tc_program (inp : string * string * bool) : test =
   let label, prog, pass = inp in
   label >:: fun _ ->
   try
-    let _ = typecheck (parse prog) in
+    let _ = typecheck (parse prog) [] in
     assert_bool "program typechecked but shouldn't have" pass
   with
   | TypeError _ -> assert_bool "program failed typechecking" (not pass)

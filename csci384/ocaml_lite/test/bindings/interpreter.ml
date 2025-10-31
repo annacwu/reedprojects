@@ -6,8 +6,8 @@ let constants =
   "constants"
   >::: List.map interp_expr_test
          [
-           ("string", failwith "Value representation of the string ab", "\"ab\"");
-           ("unit", failwith "Value representation of unit", "()");
+           ("string", VString "ab", "\"ab\"");
+           ("unit", VUnit, "()");
          ]
 
 let operators =
@@ -15,7 +15,7 @@ let operators =
   >::: List.map interp_expr_test
          [
            ( "eq string",
-             failwith "Value representation of true",
+             VBool true,
              "\"a\" = \"a\"" );
          ]
 

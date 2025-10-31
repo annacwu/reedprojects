@@ -18,4 +18,6 @@ ovm
 *.cmx
 *.o
 *.a
+*.bc
+*.swp
 

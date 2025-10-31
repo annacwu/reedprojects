@@ -26,7 +26,10 @@ let operators =
          ]
 
 let if_expr =
-  "if" >::: List.map tc_program [ (* Add something to test if-expressions *) ]
+  "if" >::: List.map tc_program [ 
+    ("if pass", "let x : bool = if 0 < 1 then false else true;;", true);
+    ("if fail", "let x : int = if 0 < 1 then 2 else false;;", false);
+]
 
 let let_expr =
   "let"

@@ -8,11 +8,15 @@ type typ =
   | Int
   | Bool
   | Unit
+  | String
+  | Func of typ * typ
 
-let typ_to_str (_t : typ) : string = match _t with
+let rec typ_to_str (_t : typ) : string = match _t with
   | Int -> "Int"
   | Bool -> "Bool"
   | Unit -> "()"
+  | String -> "String"
+  | Func (t1,t2) -> typ_to_str t1 ^ "->" ^ typ_to_str t2
 
 type param
 (** A parameter appearing an an argument list. This will be needed once we add
@@ -31,17 +35,19 @@ type params = param list
 let params_to_str (ps : params) : string =
   String.concat " " (List.map param_to_str ps)
 
-(** Literals **) (** IS IT RIGHT TO HAVE THESE AS LITERALS make these as same constructor *)
+(** Literals **) 
 type constant = 
   | CInt of int
   | CBool of bool
   | CUnit
+  | CString of string
 
 (** Represent a literal as a string. *)
 let constant_to_str : constant -> string = function
   | CInt i -> string_of_int i
   | CBool b -> string_of_bool b
   | CUnit -> "()"
+  | CString s -> s
 
 (** Binary operations. *)
 type binop =
@@ -54,6 +60,7 @@ type binop =
   | BOr (** || **)
   | BLt (** < **)
   | BEq (** = **)
+  | BCat (** ^ *)
 
 (** Represent a binary operation as a string. *)
 let binop_to_str : binop -> string = function
@@ -66,6 +73,7 @@ let binop_to_str : binop -> string = function
   | BOr -> "||"
   | BLt -> "<"
   | BEq -> "="
+  | BCat -> "^"
 
 (** Unary operation. *)
 type unop = 
@@ -85,6 +93,7 @@ type expr =
   | EVar of id  (** x *)
   | EConst of constant  (** c *)
   | ECond of expr * expr * expr (** if/then/else e *)
+  | ELet of id * params * typ option * expr * expr
 
 (** Represent an expression as a string. *)
 let rec expr_to_str : expr -> string = function
@@ -95,6 +104,9 @@ let rec expr_to_str : expr -> string = function
   | EVar v -> v
   | EConst c -> constant_to_str c
   | ECond (e1, e2, e3) -> "if" ^ expr_to_str e1 ^ "then" ^ expr_to_str e2 ^ "else" ^ expr_to_str e3 
+  | ELet (id, _, t, e1, e2) -> match t with (* no params yet *)
+    | None -> "let" ^ id ^ "=" ^ expr_to_str e1 ^ "in" ^ expr_to_str e2
+    | Some typ -> "let" ^ id ^ ":" ^ typ_to_str typ ^ "=" ^ expr_to_str e1 ^ "in" ^ expr_to_str e2
 
 (** A top-level binding.  We don't have bindings in the language yet, but my test
     code is more consistent if we artificially wrap expressions in a single
@@ -115,4 +127,4 @@ type program = binding list
 
 (** Represent a program as a string. *)
 let program_to_str (p : program) : string =
-  String.concat ";; " (List.map binding_to_str p)
+  String.concat ";; " (List.map binding_to_str p) 

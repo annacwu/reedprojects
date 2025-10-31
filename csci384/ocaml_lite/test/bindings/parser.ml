@@ -6,8 +6,8 @@ let constant_tests =
   "constants"
   >::: List.map make_expr_ast_str
          [
-           ("unit", failwith "Fill in with representation of unit value", "()");
-           ("unit with space", failwith "Fill in with unit value", "(  )");
+           ("unit", EConst(CUnit), "()");
+           ("unit with space", EConst(CUnit), "(  )");
          ]
 
 let precedence_tests =
@@ -24,7 +24,7 @@ let expr_basic_tests =
   >::: List.map make_expr_ast_str
          [
            ( "let",
-             failwith "Fill in with ast representation of code",
+             ELet("x", [], None, EConst(CInt 1), EVar "x"),
              "let x = 1 in x" );
            ("variable", EVar "x", "x");
          ]
@@ -36,10 +36,10 @@ let types =
   "types"
   >::: List.map make_type_ast_str
          [
-           ("int", failwith "AST for 'int'", "int");
-           ("bool", failwith "AST for 'bool'", "bool");
-           ("string", failwith "AST for 'string'", "string");
-           ("unit", failwith "AST for 'unit", "unit");
+           ("int", Int, "int");
+           ("bool", Bool, "bool");
+           ("string", String, "string");
+           ("unit", Unit, "unit");
          ]
 
 let typed_exprs =
@@ -47,7 +47,8 @@ let typed_exprs =
   >::: List.map make_expr_ast_str
          [
            ( "let no args",
-             failwith "AST representation of the code below",
+             
+            ELet("x", [], Some Int, EConst(CInt 2), EVar "x"),
              "let x : int = 2 in x" );
          ]
        @ List.map expr_expect_failure [ ("let type", "let f : = 2 in f + 1") ]

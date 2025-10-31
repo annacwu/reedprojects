@@ -6,6 +6,6 @@ Ocaml-lite grammar:
   C ::= E < E | E = E | E 
   E ::= E + T | E - T | T
   T ::= T * F | T / F | T mod F | F 
-  F ::= ~ F | not F | ( S ) | $int | $bool | () 
+  F ::= ~ F | not F | ( I ) | $int | $bool | () 
   $int = [0-9]+
   $bool = true | false
