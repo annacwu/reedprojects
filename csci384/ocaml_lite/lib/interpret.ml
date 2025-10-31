@@ -72,7 +72,7 @@ let rec interp_expr (env : context) : expr -> value = function
   | EVar v -> 
     if List.mem v builtins then VBuiltin 
     else 
-      let _ = print_endline(v) in
+      (* let _ = print_endline(v) in *)
       let v1 = List.assoc v env in v1
   | EConst c -> (match c with 
     | CInt i -> VInt i
@@ -92,8 +92,11 @@ let rec interp_expr (env : context) : expr -> value = function
 
 (** Interpret a top-level let binding or type definition. *)
 let interp_binding (env : context) : binding -> context = function
-  | BLet(_id, _, _, _e1) -> let _ = print_endline("let id: " ^ _id) in  let v1 = interp_expr env _e1 in 
-    let new_env: context = (_id, v1) :: env in new_env
+  | BLet(_id, _, _, _e1) -> 
+    (* let _ = print_endline("let e: " ^ expr_to_str _e1) in   *)
+    let v1 = interp_expr env _e1 in 
+
+    let new_env: context = (_id, v1) :: env in let _ = print_endline(value_to_str v1) in new_env
 
 (** Interpret a program. This just means interpreting all top-level bindings in
     order. *)

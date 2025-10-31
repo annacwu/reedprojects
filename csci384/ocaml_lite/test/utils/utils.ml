@@ -108,7 +108,7 @@ let program_test (inp : string * (context -> bool) * string * string) : test =
   let label, check, source, msg = inp in
   label
   >: test_case ~length:OUnitTest.Short (fun _ ->
-         let ctx = List.fold_left interp_binding [] (parse source) in
+         let ctx = List.fold_left interp_binding [] (parse source) in 
          assert_bool msg (check ctx))
 
 let check_val (x : string) (v : value) (ctx : context) : bool =

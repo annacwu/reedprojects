@@ -139,7 +139,7 @@ let expect (exp : token) : token list -> token list = function
         let (arg, r) = parse_factor src in
         help (EApp(acc, arg)) r
       | _ -> (acc, src)
-      in let (func, r1) = parse_factor source in help func r1
+    in let (func, r1) = parse_factor source in help func r1
   
   and parse_factor (source: token list) : expr * token list = match source with
     | LParen :: rest -> (
@@ -307,7 +307,7 @@ let rec program (src: token list) (pr: binding list): program * token list =
   | Let :: _ -> 
     let inst, r1 = binding src in
     let r2 = expect DoubleSemicolon r1 in
-    let new_pr = inst :: pr in 
+    let new_pr = List.append pr [inst] in 
     let res = if r2 = [] then (new_pr, r2) else program r2 new_pr in res
   | _ -> raise (ParseError ("Unexpected program structure: " ^ (String.concat " " (List.map tok_to_str src))))
   

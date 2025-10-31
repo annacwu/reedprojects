@@ -57,15 +57,17 @@ let rec compile_expr (ex : expr) (sp: int) (env: context) : bytes =
 
 and compile_app (_e1: expr) (_e2: expr) (sp: int) (env: context) : bytes = 
   let func = compile_expr _e1 sp env in
-  let arg = compile_expr _e2 (sp+1) env in
-  Bytes.cat func arg
+  let arg = compile_expr _e2 (sp) env in
+  Bytes.cat arg func
 
 and compile_var (v: id) (env: context) : bytes = match v with 
   | "print_string" -> let op = Bytes.create 1 in let () = Bytes.set_uint8 op 0 Codes.print in op
-  | "string_to_int" -> let op = Bytes.create 1 in let () = Bytes.set_uint8 op 0 Codes.stoi in op
-  | "int_to_string" -> let op = Bytes.create 1 in let () = Bytes.set_uint8 op 0 Codes.itos in op
+  | "string_of_int" -> let op = Bytes.create 1 in let () = Bytes.set_uint8 op 0 Codes.itos in op
+  | "int_of_string" -> let op = Bytes.create 1 in let () = Bytes.set_uint8 op 0 Codes.stoi in op
   | _ -> 
-    let off = List.assoc v env in
+    let off = 
+      (* let _ = print_endline("getting var: " ^ v) in *)
+      List.assoc v env in
     let o = Bytes.create 2 in 
     let () = Bytes.set_uint8 o 0 Codes.over in 
     let () = Bytes.set_uint8 o 1 off in o
@@ -173,10 +175,11 @@ and compile_const (_c : constant) : bytes =
 
 
 (** Compile an OCaml-lite program. *)
-let rec compile (prog : program) : bytes =
+let compile (prog : program) : bytes =
   let res =
-    match prog with
-    | [ BLet (_, [], _, EApp (EVar ps, EApp (EVar soi, expr))) ] ->
+    let rec comp_binding (src: program) (bc: bytes) (sp: int) (env: context) : bytes = 
+    match src with
+    (* | [ BLet (_, [], _, EApp (EVar ps, EApp (EVar soi, expr))) ] ->
         if ps <> "print_string" || soi <> "string_of_int" then
           failwith "Unexpected program structure"
         else
@@ -184,13 +187,17 @@ let rec compile (prog : program) : bytes =
           let r = Bytes.extend bs 0 2 in
           let () = Bytes.set_uint8 r (Bytes.length bs) Codes.itos in
           let () = Bytes.set_uint8 r (Bytes.length bs + 1) Codes.print in
-          r
-    (* | BLet(id, [], _, expr) :: rest -> 
-      let e = compile_expr expr 0 [] in 
+          r *)
+    | BLet(id, [], _, expr) :: rest -> 
+      let e = compile_expr expr 0 env in 
+      let new_bc = Bytes.cat bc e in 
       let new_env: context = (id, sp) :: env in 
-      if rest = [] then e else compile rest (sp + 1) new_env  *)
+      if rest = [] then new_bc else comp_binding rest new_bc (sp + 1) new_env 
+      (* greg says it is right to just go thorugh each binding and compile it and then 
+        then add it to the context with an updated stack pointer and that should be
+        all you have to do there *)
     | _ -> failwith "Unexpected program structure"
-  in
+  in comp_binding prog Bytes.empty 0 [] in
   (* Write out the bytecode magic number. *)
   let magic_number = Bytes.of_string "ReedPLDI" in
   (* Write out the number of functions. *)
