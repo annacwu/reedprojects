@@ -8,18 +8,21 @@ let let_exprs =
          [
            ( "recursion",
              VInt 0,
-             "let rec f x = if x = 0 then x else f (x - 1) in f 3" );
+             "let rec f (x : int) : int = if x = 0 then x else f (x - 1) in f 3"
+           );
          ]
 
 let lambda_exprs =
   "lambdas"
   >::: List.map interp_expr_test
          [
-           ("closure", failwith "AST for the code below", "fun x => x");
-           ("applying a closure", VInt 3, "(fun x => x + 2) 1");
+           ( "closure",
+             failwith "AST for the code below",
+             "fun (x : int) : int => x" );
+           ("applying a closure", VInt 3, "(fun (x : int) : int => x + 2) 1");
            ( "context capture",
              VInt 3,
-             "let f = let x = 1 in fun y => x + y in f 2" );
+             "let f = let x = 1 in fun (y : int) : int => x + y in f 2" );
          ]
 
 let definitions =
@@ -28,7 +31,7 @@ let definitions =
          [
            ( "function definition",
              check_val "y" (VInt 6),
-             "let f x = x + 2;; let y = f 4;;",
+             "let f (x : int) : int = x + 2;; let y = f 4;;",
              "Couldn't refer to defined function" );
          ]
 
@@ -38,8 +41,8 @@ let recursion =
          [
            ( "recursive definition",
              check_val "y" (VInt 120),
-             "let rec fact x = if x = 0 then 1 else x * fact (x - 1);; let y = \
-              fact 5;;",
+             "let rec fact (x : int) : int = if x = 0 then 1 else x * fact (x \
+              - 1);; let y = fact 5;;",
              "Couldn't run recursive function" );
          ]
 

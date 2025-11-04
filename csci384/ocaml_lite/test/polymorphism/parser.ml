@@ -20,7 +20,7 @@ let typed_exprs =
          [
            ( "let with args",
              failwith "AST representation of the code below",
-             "let f (x : int) (y : bool) : int = x in f 2 false" );
+             "let f x y = x in f 2 false" );
          ]
        @ List.map expr_expect_failure
            [ ("function missing arg", "let f : -> int = 2 in f") ]
@@ -33,7 +33,7 @@ let top_level_let =
          [
            ( "let with params and type",
              failwith "AST for the code below",
-             "let f (x : int) : int = x + 1" );
+             "let f x = x + 1" );
          ]
 
 let binding_tests = "bindings" >::: [ top_level_let ]
@@ -45,9 +45,8 @@ let program_tests =
            assert_equal ~printer:program_to_str
              (failwith "AST for the program below")
              (parse
-                ("let f (x : int) : string = if x < 0 then \"neg\" else \
-                  \"pos\";;"
-               ^ "let fact (x : int) : int = if x = 1 then x else x * (x - 1);;"
+                ("let f x = if x < 0 then \"neg\" else \"pos\";;"
+               ^ "let fact x = if x = 1 then x else x * (x - 1);;"
                ^ "let _ = f (fact 2);;")) );
        ]
 
