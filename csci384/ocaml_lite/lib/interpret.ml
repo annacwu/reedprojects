@@ -9,6 +9,11 @@ type value =
   | VUnit (** A unit value. *)
   | VString of string (** A string value. *)
   | VBuiltin 
+  | VClosure of string * expr * context * string option
+
+and context = (id * value) list
+(** A context in which to evaluate an expression. This will become relevant when
+    we add let bindings to the language. *)
 
 (** Represent a value as a string. *)
 let value_to_str : value -> string = function 
@@ -18,9 +23,7 @@ let value_to_str : value -> string = function
   | VString s -> s
   | VBuiltin -> "built in"
 
-type context = (id * value) list
-(** A context in which to evaluate an expression. This will become relevant when
-    we add let bindings to the language. *)
+
 
 exception RuntimeError of string
 (** A program may throw a runtime error due to bad typing. This typically

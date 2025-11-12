@@ -6,7 +6,7 @@ let tc_program (inp : string * string * bool) : test =
   let label, prog, pass = inp in
   label >:: fun _ ->
   try
-    let _ = typecheck (parse prog) in
+    let _ = typecheck (parse prog) [] in
     assert_bool "program typechecked but shouldn't have" pass
   with
   | TypeError _ -> assert_bool "program failed typechecking" (not pass)
@@ -65,6 +65,9 @@ let recursion =
            ( "bad self type",
              "let rec f (x : int) : int = if x < 1 then f x else f true;;",
              false );
+            ( "good self type",
+             "let rec f (x : int) : int = if x < 1 then x else f (x - 1);;",
+             true );
          ]
 
 let all_recur = "recursion" >::: [ rec_let_expr; recursion ]

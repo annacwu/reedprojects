@@ -18,15 +18,20 @@ let rec typ_to_str (_t : typ) : string = match _t with
   | String -> "String"
   | Func (t1,t2) -> typ_to_str t1 ^ "->" ^ typ_to_str t2
 
-type param
+type param = Param of id * typ option
 (** A parameter appearing an an argument list. This will be needed once we add
     functions. *)
 
 (** Get the name of a parameter. *)
-let param_name : param -> id = fun _ -> failwith "Undefined: param_name"
+let param_name : param -> id = function 
+  | Param(name, _) -> name
 
 (** Represent a parameter as a string. *)
-let param_to_str : param -> string = fun _ -> failwith "Undefined: param_to_str"
+let param_to_str : param -> string = function
+  | Param(name, t) -> (match t with 
+    | Some tp ->  "(" ^ name ^ ":" ^ typ_to_str tp ^ ")"
+    | None -> name ^ ")" 
+    )
 
 type params = param list
 (** The list parameters to a function. *)
@@ -94,6 +99,8 @@ type expr =
   | EConst of constant  (** c *)
   | ECond of expr * expr * expr (** if/then/else e *)
   | ELet of id * params * typ option * expr * expr
+  | ELetRec of id * params * typ option * expr * expr
+  | EAnon of params * typ option * expr
 
 (** Represent an expression as a string. *)
 let rec expr_to_str : expr -> string = function
@@ -104,23 +111,36 @@ let rec expr_to_str : expr -> string = function
   | EVar v -> v
   | EConst c -> constant_to_str c
   | ECond (e1, e2, e3) -> "if" ^ expr_to_str e1 ^ "then" ^ expr_to_str e2 ^ "else" ^ expr_to_str e3 
-  | ELet (id, _, t, e1, e2) -> match t with (* no params yet *)
-    | None -> "let" ^ id ^ "=" ^ expr_to_str e1 ^ "in" ^ expr_to_str e2
-    | Some typ -> "let" ^ id ^ ":" ^ typ_to_str typ ^ "=" ^ expr_to_str e1 ^ "in" ^ expr_to_str e2
+  | ELet (id, ps, t, e1, e2) -> (match t with 
+    | None -> "let" ^ id ^ params_to_str ps ^ "=" ^ expr_to_str e1 ^ "in" ^ expr_to_str e2
+    | Some typ -> "let" ^ id ^ params_to_str ps ^ ":" ^ typ_to_str typ ^ "=" ^ expr_to_str e1 ^ "in" ^ expr_to_str e2)
+  | ELetRec (id, ps, t, e1, e2) -> (match t with 
+    | None -> "let rec" ^ id ^ params_to_str ps ^ "=" ^ expr_to_str e1 ^ "in" ^ expr_to_str e2
+    | Some typ -> "let rec" ^ id ^ params_to_str ps ^ ":" ^ typ_to_str typ ^ "=" ^ expr_to_str e1 ^ "in" ^ expr_to_str e2)
+  | EAnon (ps, t, e) -> (match t with
+    | None -> "fun" ^ params_to_str ps ^ "=>" ^ expr_to_str e
+    | Some typ -> "fun" ^ params_to_str ps ^ ":" ^ typ_to_str typ ^ "=>" ^ expr_to_str e)
+     
 
 (** A top-level binding.  We don't have bindings in the language yet, but my test
     code is more consistent if we artificially wrap expressions in a single
     top-level binding from the beginning. *)
-type binding = BLet of id * params * typ option * expr
+type binding = BLet of id * params * typ option * expr | BLetRec of id * params * typ option * expr
 
 (** Represent a binding as a string. *)
 let binding_to_str : binding -> string = function
   | BLet (id, ps, mty, e) ->
       let tystr =
-        match mty with None -> "" | Some _ -> failwith "No types yet!"
+        match mty with None -> "" | Some t -> ":" ^ typ_to_str t
       in
       "let " ^ id ^ " " ^ params_to_str ps ^ tystr ^ " = (" ^ expr_to_str e
       ^ ")"
+  | BLetRec (id, ps, mty, e) ->
+      let tystr =
+        match mty with None -> "" | Some t -> ":" ^ typ_to_str t
+      in
+      "let rec " ^ id ^ " " ^ params_to_str ps ^ tystr ^ " = (" ^ expr_to_str e
+      ^ ")" 
 
 type program = binding list
 (** An OCaml-lite program. *)

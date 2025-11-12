@@ -64,7 +64,16 @@ let top_level_let =
              "let x = 1" );
          ]
 
-let binding_tests = "bindings" >::: [ top_level_let ]
+let top_level_let_type =
+  "top-level lets"
+  >::: List.map make_bind_ast_str
+         [
+           ( "let no params and type",
+             BLet ("x", [], Some Int, EConst (CInt 1)),
+             "let x : int = 1 ;;" );
+         ]
+
+let binding_tests = "bindings" >::: [ top_level_let; top_level_let_type ]
 
 let parse_tests =
   "test suite for parsing" >::: [ expr_tests; type_tests; binding_tests ]
