@@ -88,7 +88,16 @@ let compare_value (v1 : value) (v2 : value) : bool =
     | VString v1, VString v2 -> v1 = v2
     | VUnit, VUnit -> true
     | VBuiltin, VBuiltin -> true
-    | _ -> failwith "Unexpected value"
+    | VClosure(x1, e1, c1, r1), VClosure(x2, e2, c2, r2) ->  
+      if x1 = x2 then 
+        if e1 = e2 then
+          if c1 = c2 then
+            if r1 = r2 then true
+            else false
+          else false
+        else false
+      else false
+    | _ -> failwith ("Unexpected value: " ^ value_to_str v1)
 
 let interp_expr_test (inp : string * value * string) : test =
   let label, v, source = inp in

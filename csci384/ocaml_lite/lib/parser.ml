@@ -33,52 +33,40 @@ let expect (exp : token) : token list -> token list = function
              ("Expected token: " ^ tok_to_str exp ^ " got: " ^ tok_to_str t))
             
 (* helper for all parsing functions to parse types *)
- let rec parse_typ (source: token list) : typ * token list = match source with
-      | t1 :: Arrow :: t2 :: rest -> 
-        let typ1, _ = parse_typ (t1 :: rest) in 
-        let typ2, _ = parse_typ (t2 :: rest) in
-        (match rest with 
-          | Eq :: r -> Func (typ1, typ2), r
-          | RParen :: r -> Func (typ1, typ2), r
-          | DoubleArrow :: r -> Func (typ1, typ2), r
-          | _ -> Func (typ1, typ2), rest)
-      | Colon :: rest -> parse_typ rest
-      | t :: rest -> (match t with
-        | TInt -> (match rest with 
-          | Eq :: r -> Int, r
-          | RParen :: r -> Int, r
-          | DoubleArrow :: r -> Int, r
-          | _ -> Int, rest)
-        | TBool -> (match rest with 
-          | Eq :: r -> Bool, r
-          | RParen :: r -> Bool, r
-          | DoubleArrow :: r -> Bool, r
-          | _ -> Bool, rest)
-        | TUnit -> (match rest with 
-          | Eq :: r -> Unit, r
-          | RParen :: r -> Unit, r
-          | DoubleArrow :: r -> Unit, r
-          | _ -> Unit, rest)
-        | TString -> (match rest with 
-          | Eq :: r -> String, r
-          | RParen :: r -> String, r
-          | DoubleArrow :: r -> String, r
-          | _ -> String, rest)
-        | _ -> raise (ParseError ("Expected type, got " ^ (String.concat " " (List.map tok_to_str source))))
-      )
-      | _ -> raise (ParseError ("Expected type"))
+  let rec parse_typ (source: token list) : typ * token list = 
+    let t1, r = parse_base_typ source in match r with
+      | Arrow :: r2 ->
+          let t2, r3 = parse_typ r2 in
+          (Func(t1, t2), r3)
+      | _ -> (t1, r)
+
+  and parse_base_typ (source: token list) : typ * token list =
+    match source with
+    | TInt :: rest -> (Int, rest)
+    | TBool :: rest -> (Bool, rest)
+    | TUnit :: rest -> (Unit, rest)
+    | TString :: rest -> (String, rest)
+    | LParen :: rest ->
+        let t, r1 = parse_typ rest in
+        (match r1 with
+         | RParen :: r2 -> (t, r2) 
+         | _ -> raise (ParseError "Expected )"))
+    | _ -> raise (ParseError ("Expected type, got " ^ (String.concat " " (List.map tok_to_str source))))
+
 
 (* helper for all parsing functions to parse parameters *)
  let rec parse_params (source: token list) (ps: params) : params * token list = match source with
       | LParen :: Id x :: Colon :: t  -> 
-        let typ, r = parse_typ t in
-        let p = List.append ps [Param(x, Some typ)] in parse_params r p
+        let typ, r1 = parse_typ t in
+        let p = List.append ps [Param(x, Some typ)] in (match r1 with
+         | RParen :: r2 -> parse_params r2 p
+         | _ -> raise (ParseError "Expected )")) 
       | Id x :: rest -> 
         let p = List.append ps [Param(x, None)] in 
         parse_params rest p
       | Colon :: _ -> ps, source
       | Eq :: _ -> ps, source
-      | _ -> raise (ParseError ("Unexpected parameters structure"))      
+      | _ -> raise (ParseError ("Unexpected parameters structure: "^  (String.concat " " (List.map tok_to_str source)) ))  
 
 (***************
  * Expressions *
@@ -119,33 +107,15 @@ let expect (exp : token) : token list -> token list = function
   
   and parse_fun (source: token list):  expr * token list = match source with
     | Fun :: rest -> 
-        let ps, r1 = parse_params rest [] in 
-        let typ, r2 = parse_typ r1 in
-        let e, r3 = parse_if r2 in 
-        EAnon(ps, Some typ, e), r3
+        let ps, r1 = parse_params rest [] in (match r1 with 
+          | Colon :: rest -> 
+              let typ, r2 = parse_typ rest in 
+              let e, r3 = parse_if r2 in 
+              EAnon(ps, Some typ, e), r3
+          | _ -> let e, r3 = parse_if r1 in 
+              EAnon(ps, None, e), r3)
     | _ -> parse_if source
 
- (* let rec parse_bind (source: token list) : expr * token list = 
-  match source with
-    | Let :: Id x :: Eq :: rest -> let (e1, r1) = parse_if rest in 
-    (* let _ = print_endline("in the first case") in *)
-    (match r1 with 
-      | In :: rest -> let (e2, r2) = parse_if rest in 
-      (ELet(x, [], None, e1, e2), r2)
-      | _ -> raise (ParseError ("Expected in")))
-    | Let :: Id x :: Colon :: t :: Eq :: rest -> let (e1, r1) = parse_if rest in 
-    (* let _ = print_endline("in the second case") in *)
-    (match r1 with 
-      | In :: rest -> let (e2, r2) = parse_if rest in (match t with
-        | TInt -> (ELet(x, [], Some Int, e1, e2), r2)
-        | TBool -> (ELet(x, [], Some Bool, e1, e2), r2)
-        | TUnit -> (ELet(x, [], Some Unit, e1, e2), r2)
-        | TString -> (ELet(x, [], Some String, e1, e2), r2)
-        | _ -> raise (ParseError ("Expected type"))
-      )
-      | _ -> raise (ParseError ("Expected in")))
-    | Let :: _ -> raise (ParseError ("Unexpected let binding structure"))
-    | _ -> parse_if source *)
  and parse_if (source: token list) : expr * token list = match source with
     | If :: rest -> 
       let (cond, r1) = parse_or rest in 
@@ -248,6 +218,8 @@ let expect (exp : token) : token list -> token list = function
     | Id x :: rest -> (EVar x, rest)
     | If :: _ -> parse_if source
     | Let :: _ -> parse_bind source
+    | Eq :: rest -> parse_bind rest
+    | DoubleArrow :: rest -> parse_fun rest
     | Fun :: _ -> parse_fun source
     | _ -> raise (ParseError ("Unexpected expression: " ^ (String.concat " " (List.map tok_to_str source))))
 
@@ -259,23 +231,7 @@ let expect (exp : token) : token list -> token list = function
  * Types *
  *********)
 
-  (* let rec typ_parse_bind (source: token list) : typ * token list = match source with
-    | Let :: Id _ :: Eq :: rest -> let (e1, r1) = typ_parse_if rest in (match r1 with 
-      | In :: rest -> let (_, r2) = typ_parse_if rest in 
-      (e1, r2)
-      | _ -> raise (ParseError ("Expected in")))
-    | Let :: Id _ :: Colon :: t :: Eq :: rest -> let (_, r1) = typ_parse_if rest in (match r1 with 
-      | In :: rest -> let (_, r2) = typ_parse_if rest in (match t with
-        | TInt -> (Int, r2)
-        | TBool -> (Bool, r2)
-        | TUnit -> (Unit, r2)
-        | TString -> (String, r2)
-        | _ -> raise (ParseError ("Expected type"))
-      )
-      | _ -> raise (ParseError ("Expected in")))
-    | _ -> typ_parse_if source *)
-
-    let rec typ_parse_bind (source: token list) : typ * token list = match source with
+  let rec typ_parse_bind (source: token list) : typ * token list = match source with
     | Let :: Id _ :: rest -> 
       let (_, r1) = parse_params rest [] in (match r1 with
         | Eq :: rest -> let (_, r2) = typ_parse_if rest in (match r2 with 
@@ -342,7 +298,7 @@ let expect (exp : token) : token list -> token list = function
       (Bool, r) 
     | _ -> typ_parse_concat source 
 
-    and typ_parse_concat (source: token list) : typ * token list =
+  and typ_parse_concat (source: token list) : typ * token list =
     let rec help acc src = match src with
       | Concat :: rest ->
         let (_, r) = typ_parse_expr rest in 
@@ -380,15 +336,7 @@ let expect (exp : token) : token list -> token list = function
     | Not :: rest -> 
       let (t, r) = typ_parse_factor rest in
       (t, r)
-    | LParen :: rest -> (
-        match rest with
-        | RParen :: rest -> (Unit, rest)
-        | _ ->
-            let (t, r) = typ_parse_if rest in
-            match r with
-            | RParen :: rest -> (t, rest)
-            | _ -> raise (ParseError "Expected )")
-      )
+    | LParen :: _ -> parse_typ source 
     | _ :: Arrow :: _ :: _ -> parse_typ source
     | Int _ :: rest -> (Int, rest)
     | True :: rest -> (Bool, rest)
@@ -411,15 +359,6 @@ let typ (_src : token list) : typ * token list =
  **********************)
 
 let binding (_src : token list) : binding * token list = match _src with
-  (* | Let :: Id x :: Eq :: rest -> let (e1, r1) = expr rest in 
-      (* let _ = print_endline("\n in the binding") in *)
-      (BLet(x, [], None, e1), r1)
-  | Let :: Id x :: Colon :: t :: Eq :: rest -> let (e1, r1) = expr rest in (match t with
-        | TInt -> (BLet(x, [], Some Int, e1), r1)
-        | TBool -> (BLet(x, [], Some Bool, e1), r1)
-        | TUnit -> (BLet(x, [], Some Unit, e1), r1)
-        | TString -> (BLet(x, [], Some String, e1), r1)
-        | _ -> raise (ParseError ("Expected type in upper level binding"))) *)
     | Let :: Id x :: rest -> 
       let (ps, r1) = parse_params rest [] in (match r1 with
         | Eq :: rest -> let (e1, r2) = parse_if rest in (BLet(x, ps, None, e1), r2)
@@ -446,35 +385,6 @@ let rec program (src: token list) (pr: binding list): program * token list =
     let res = if r2 = [] then (new_pr, r2) else program r2 new_pr in res
   | _ -> raise (ParseError ("Unexpected program structure: " ^ (String.concat " " (List.map tok_to_str src))))
   
-
-(* For now our program parses source code that has exactly the form
-   "let _ = print_string (string_of_int (<expr>)) ;;"
-   This form will remain a valid OCaml-lite program throughout the entire
-   semester, so testing can be more consistent if we start with this form.
-   However, we don't want to deal with let bindings or function application
-   yet, so we've just built the parser to expect this form for now. *)
-
-(* let program (src : token list) : program * token list =
-  let r1 = expect Let src in
-  let r2 = expect (Id "_") r1 in
-  let r3 = expect Eq r2 in
-  let r4 = expect (Id "print_string") r3 in
-  let r5 = expect LParen r4 in
-  let r6 = expect (Id "string_of_int") r5 in
-  let r7 = expect LParen r6 in
-  let expr, r8 = expr r7 in
-  let r9 = expect RParen r8 in
-  let r10 = expect RParen r9 in
-  let r11 = expect DoubleSemicolon r10 in
-  ( [
-      BLet
-        ( "_",
-          [],
-          None,
-          EApp (EVar "print_string", EApp (EVar "string_of_int", expr)) );
-    ],
-    r11 ) *)
-
 (*************
  * Main code *
  *************)

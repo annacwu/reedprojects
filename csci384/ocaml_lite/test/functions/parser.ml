@@ -21,7 +21,12 @@ let expr_tests = "expressions" >::: [ associativity_tests; recursion_tests ]
 let types =
   "types"
   >::: List.map make_type_ast_str
-         [ ("function", Func(Int, Bool), "int -> bool") ]
+         [
+           ("function", Func(Int, Bool), "int -> bool");
+           ("function right assoc", Func(Int, Func(Int, Bool)), "int -> int -> bool");
+           ("function with parens", Func(Func(Int, Int), Bool), "(int -> int) -> bool");
+           ("super nested function type", Func(Int, Func(Int, Func(Int, Int))), "int -> int -> int -> int");
+         ]
 
 let typed_exprs =
   "expressions"

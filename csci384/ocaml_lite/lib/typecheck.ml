@@ -37,7 +37,7 @@ let rec typecheck_params (_ps : params) (env: context) : context = match _ps wit
     let new_env: context = (id, t) :: env in
     typecheck_params rest new_env 
 
-   (* helper to build up the function type for a variable *)
+  (* helper to build up the function type for a variable *)
 let rec make_function_typ (_ps : params) (acc: typ) : typ = match _ps with
     [] -> acc
   | Param(_, Some t) :: rest -> make_function_typ rest (Func(t, acc))
@@ -49,11 +49,7 @@ let rec typecheck_expr (_e : expr) (env: context) : typ = match _e with
     let t2 = typecheck_expr _e2 env in
     (match t1 with 
     | Func(t3, t4) -> if t2 = t3 then t4 else  raise (TypeError ("Expected type " ^ typ_to_str t3))
-    (* | Func(String, Unit) -> if t2 = String then Unit else raise (TypeError "print_string expects string")
-    | Func(Int, String) -> if t2 = Int then String else raise (TypeError "string_of_int expects int")
-    | Func(String, Int) -> if t2 = String then Int else raise (TypeError "int_of_string expects string") *)
-    | _ -> (* let _ = print_endline("got " ^ typ_to_str t1 ^ "for " ^ expr_to_str _e1 ^ "in " ^ context_to_str env) in  *)
-      raise (TypeError "Expected function type"))
+    | _ -> raise (TypeError "Expected function type"))
   | EBinop(_l, _o, _r) -> 
     let tleft = typecheck_expr _l env in 
     let tright = typecheck_expr _r env in
@@ -92,7 +88,6 @@ let rec typecheck_expr (_e : expr) (env: context) : typ = match _e with
     let elsebody = typecheck_expr _e3 env in
     if cond = Bool && body = elsebody then body else raise (TypeError "Incorrect type for if expression" )
   | ELet(_id, _ps, _t, _e1, _e2) -> 
-    (* let _ = print_endline(expr_to_str (ELet(_id, _ps, _t, _e1, _e2))) in *)
     let ps_env = typecheck_params _ps env in
     (match _t with
     | None -> 
@@ -113,8 +108,7 @@ let rec typecheck_expr (_e : expr) (env: context) : typ = match _e with
       let t2 = typecheck_expr _e2 new_env in t2
       else raise (TypeError "Unexpected expression type") )
   | ELetRec(_id, _ps, _t, _e1, _e2) -> 
-   (* let _ = print_endline(expr_to_str (ELetRec(_id, _ps, _t, _e1, _e2))) in  *)
-    let ps_env = typecheck_params _ps env in (* this is lowk irrelevant rn *)
+    let ps_env = typecheck_params _ps env in (* this is lowk irrelevant rn bc no untyped rec calls *)
     (match _t with
     | None -> 
       let t1 = typecheck_expr _e1 ps_env in 
@@ -123,7 +117,6 @@ let rec typecheck_expr (_e : expr) (env: context) : typ = match _e with
     | Some typ ->
       let func_env = (_id, Some (make_function_typ _ps typ)) :: env in
       let ps_env = typecheck_params _ps func_env in 
-      (* let _ = print_endline(context_to_str ps_env) in *)
       let t1 = typecheck_expr _e1 ps_env in 
       if t1 = typ then 
         let t2 = typecheck_expr _e2 ps_env in t2
@@ -150,7 +143,6 @@ let rec typecheck (p : program) (env: context): unit =
       (* let _ = print_endline("\n expr type: " ^ typ_to_str (typecheck_expr expr ps_env)) in 
       let _ = print_endline("manual type: " ^ typ_to_str t ^ "\n") in  *)
       let t1 = typecheck_expr expr ps_env in 
-      (* let _ = print_endline("expr type: " ^ typ_to_str t1) in *)
       if ps <> [] then 
         (* let _ = print_endline("goes in ps <> [] next ") in *)
         let func_env = (id, Some (make_function_typ ps t)) :: ps_env in

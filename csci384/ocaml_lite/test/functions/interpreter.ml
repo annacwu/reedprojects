@@ -10,6 +10,18 @@ let let_exprs =
              VInt 0,
              "let rec f (x : int) : int = if x = 0 then x else f (x - 1) in f 3"
            );
+            ("two params", 
+            VInt 6, 
+            "let rec mul (x : int) (y : int) : int = if x = 0 then 0 else y + mul (x - 1) y in mul 3 2"
+            );
+            ("three params", 
+            VInt 6, 
+            "let add (x : int) (y : int) (z: int) : int = x + y + z in add 1 2 3"
+            );
+            ("no shadowing",
+            VInt 2, 
+            "let f (x : int) : int = x + 1 in let f (x : int) : int = f x + 1 in f 0"
+            );
          ]
 
 let lambda_exprs =
@@ -17,12 +29,16 @@ let lambda_exprs =
   >::: List.map interp_expr_test
          [
            ( "closure",
-             failwith "AST for the code below",
+             VClosure("x", EVar("x"), [], None),
              "fun (x : int) : int => x" );
            ("applying a closure", VInt 3, "(fun (x : int) : int => x + 2) 1");
            ( "context capture",
              VInt 3,
              "let f = let x = 1 in fun (y : int) : int => x + y in f 2" );
+           ( "let with fun",
+             VInt 2,
+             "let f = fun (x : int) : int => x + 1 in f 1"
+           );
          ]
 
 let definitions =
@@ -33,6 +49,10 @@ let definitions =
              check_val "y" (VInt 6),
              "let f (x : int) : int = x + 2;; let y = f 4;;",
              "Couldn't refer to defined function" );
+            ("closure in top-level", 
+             check_val "z" (VInt 10), 
+             "let x = 5;; let addx (y : int) : int = x + y;; let z = addx 5;;", 
+             "Closure capture failed");
          ]
 
 let recursion =
@@ -44,6 +64,11 @@ let recursion =
              "let rec fact (x : int) : int = if x = 0 then 1 else x * fact (x \
               - 1);; let y = fact 5;;",
              "Couldn't run recursive function" );
+            ( "recursive two params definition",
+             check_val "z" (VInt 6),
+             "let rec mul (x : int) (y : int) : int = if x = 0 then 0 else y + mul (x - 1) y;; \
+              let z = mul 3 2;;",
+             "Couldn't run recursive function" );
          ]
 
 let builtins =
@@ -51,13 +76,19 @@ let builtins =
   >::: List.map program_test
          [
            ( "string_of_int",
-             check_val "y" (failwith "Value for string 12"),
+             check_val "y" (VString "12"),
              "let y = string_of_int 12;;",
              "string_of_int failed" );
            ( "int_of_string",
              check_val "y" (VInt 12),
              "let y = int_of_string \"12\";;",
              "int_of_string failed" );
+            ("classic structure",
+            check_val "s" (VString "3"),
+            "let s = string_of_int (
+            let f = let x = 1 in fun (y : int) : int => x + y in f 2);;",
+            "something failed lol"
+            );
          ]
 
 let interp_tests =

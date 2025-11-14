@@ -11,18 +11,25 @@ type value =
   | VBuiltin 
   | VClosure of string * expr * context * string option
 
+(** A context in which to evaluate an expression. *)
 and context = (id * value) list
-(** A context in which to evaluate an expression. This will become relevant when
-    we add let bindings to the language. *)
+
+
+let rec var_to_str : (id * value) -> string = function
+  | (id, v) -> "(" ^ id ^ ", " ^ value_to_str v ^ ")"
+
+and context_to_str (_c : context) : string = String.concat " " (List.map var_to_str _c)
 
 (** Represent a value as a string. *)
-let value_to_str : value -> string = function 
+and value_to_str : value -> string = function 
   | VInt i -> string_of_int i
   | VBool b -> string_of_bool b
   | VUnit -> "()"
   | VString s -> s
   | VBuiltin -> "built in"
-
+  | VClosure(x, e , c, r) -> (match r with 
+    | None -> "let " ^ x ^ " = " ^ expr_to_str e ^ "in " ^ context_to_str c 
+    | Some s -> "let " ^ s ^ " " ^ x ^ " = " ^ expr_to_str e ^ "in " ^ context_to_str c )
 
 
 exception RuntimeError of string
@@ -37,15 +44,21 @@ let builtins : id list = [ "string_of_int"; "int_of_string"; "print_string" ]
 (** Interpret an expression. *)
 let rec interp_expr (env : context) : expr -> value = function
   | EApp (_e1, _e2) -> 
-    let v1 = interp_expr env _e1 in
-    let v2 = interp_expr env _e2 in 
-    (match v1 with 
-      | VBuiltin -> (match _e1, v2 with
-        | EVar "print_string", VString s -> let () = print_string s in VBuiltin
-        | EVar "string_of_int", VInt i -> let x = string_of_int i in VString(x)
-        | EVar "int_of_string", VString s -> let x = int_of_string s in VInt(x)
-        | _ -> raise (RuntimeError "No other functions yet"))
-      | _ -> raise (RuntimeError "No other functions yet"))
+      let v1 = interp_expr env _e1 in 
+      let v2 = interp_expr env _e2 in 
+      (match v1 with 
+        | VBuiltin -> (match _e1, v2 with
+          | EVar "print_string", VString s -> let () = print_string s in VBuiltin
+          | EVar "string_of_int", VInt i -> let x = string_of_int i in VString(x)
+          | EVar "int_of_string", VString s -> let x = int_of_string s in VInt(x)
+          | _ -> raise (RuntimeError "No other built in functions"))
+        | VClosure(x, e, cxt, rflag) -> 
+            let new_env = (x, v2) :: cxt in 
+            let final_env = (match rflag with
+              | None -> new_env
+              | Some s -> (s, v1) :: new_env)
+            in interp_expr final_env e
+        | _ -> raise (RuntimeError "Expected closure"))
   | EBinop (_l, _o, _r) -> 
     let left = interp_expr env _l in
     let right = interp_expr env _r in
@@ -75,8 +88,9 @@ let rec interp_expr (env : context) : expr -> value = function
   | EVar v -> 
     if List.mem v builtins then VBuiltin 
     else 
-      (* let _ = print_endline(v) in *)
-      let v1 = List.assoc v env in v1
+      let v1 = List.assoc_opt v env in( match v1 with
+        | None -> raise( RuntimeError (v ^ " not found in " ^ context_to_str env))
+        | Some v -> v)
   | EConst c -> (match c with 
     | CInt i -> VInt i
     | CBool b -> VBool b
@@ -87,19 +101,42 @@ let rec interp_expr (env : context) : expr -> value = function
     | VBool true -> interp_expr env _e2
     | VBool false -> interp_expr env _e3
     | _ -> raise (RuntimeError "Uncaught conditional type error"))
-  | ELet(_id, _, _, _e1, _e2) -> 
-    let v1 = interp_expr env _e1 in 
-    (* let _ = print_endline("let id: " ^ _id ^ " and value: " ^ value_to_str v1) in  *)
+  | ELet(_id, _ps, _t, _e1, _e2) -> (match _ps with
+    | [] -> let v1 = interp_expr env _e1 in 
     let new_env: context = (_id, v1) :: env in
     let v2 = interp_expr new_env _e2 in v2
+    | ps -> let v1 = curry_anon ps _e1 env None in 
+    interp_expr ((_id, v1) :: env) _e2)
+  | ELetRec(_id, _ps, _t, _e1, _e2) -> (match _ps with 
+    | [] -> let v1 = interp_expr env _e1 in 
+    let new_env: context = (_id, v1) :: env in
+    let v2 = interp_expr new_env _e2 in v2
+    | ps -> let v1 = curry_anon  ps _e1 env (Some _id)in 
+    interp_expr ((_id, v1) :: env) _e2)
+  | EAnon(_ps, _, _e) -> curry_anon _ps _e env None
+
+(* Helper to curry a let binding into anonymous functions *)
+and curry_anon (ps: params) (e: expr) (env: context) (rname: string option)  =
+  match ps with
+    | [] -> interp_expr env e
+    | [Param(x, _)] ->
+        VClosure(x, e, env, rname)
+    | Param(x, _) :: rest ->
+        let curried = EAnon(rest, None, e) in
+        VClosure(x, curried, env, rname)
 
 (** Interpret a top-level let binding or type definition. *)
 let interp_binding (env : context) : binding -> context = function
-  | BLet(_id, _, _, _e1) -> 
-    (* let _ = print_endline("let e: " ^ expr_to_str _e1) in   *)
-    let v1 = interp_expr env _e1 in 
-
-    let new_env: context = (_id, v1) :: env in let _ = print_endline(value_to_str v1) in new_env
+  | BLet(_id, _ps, _, _e1) -> (match _ps with
+    | [] -> let v1 = interp_expr env _e1 in 
+      let new_env: context = (_id, v1) :: env in new_env
+    | ps -> let v1 = curry_anon  ps _e1 env None in 
+    (_id, v1) :: env) 
+  | BLetRec(_id, _ps, _, _e1) -> (match _ps with
+    | [] -> let v1 = interp_expr env _e1 in 
+      let new_env: context = (_id, v1) :: env in new_env
+    | ps -> let v1 = curry_anon  ps _e1 env (Some _id) in 
+    (_id, v1) :: env) 
 
 (** Interpret a program. This just means interpreting all top-level bindings in
     order. *)
@@ -108,21 +145,3 @@ let rec interpret (prog : program) (env: context) : unit =
   | head :: tail -> 
     let res = interp_binding env head in interpret tail res
   | [] -> ()
-  (* match prog with
-  | BLet(_, [], _, _) :: rest ->
-      let t = interp_expr env  in 
-      let new_env: context = (id, t) :: env in
-      let res = interpret rest new_env in res  
-  | [] -> ()
-  | _ -> raise (RuntimeError "Unexpected program structure")
-  (* match prog with *)
-  | [ BLet (_, [], _, EApp (EVar ps, EApp (EVar soi, expr))) ] -> (
-      if ps <> "print_string" || soi <> "string_of_int" then
-        failwith "Unexpected program structure"
-        else match interp_expr [] expr with
-          | VInt i -> print_int i
-          | VUnit -> print_string "()"
-          | VBool b -> print_string(string_of_bool b)
-          | VString s -> print_string s
-      )
-  | _ -> failwith "Unexpected program structure" *)

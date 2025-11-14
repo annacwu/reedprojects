@@ -12,7 +12,6 @@ let tc_program (inp : string * string * bool) : test =
   | TypeError _ -> assert_bool "program failed typechecking" (not pass)
   | OUnitTest.OUnit_failure _ as e -> raise e
   | e -> raise e
-(*assert_failure "typechecking failed with unexpected error")*)
 
 let let_expr =
   "let"
@@ -24,6 +23,12 @@ let let_expr =
            ( "fail function",
              "let x : unit -> int = let f (y : unit) : int = y in f;;",
              false );
+           ( "pass anon function",
+             "let f = fun (x : int) : int => x + 1;;",
+             true);
+           ( "curried type", 
+             "let add (x : int) (y : int) : int = x + y;; let f : int -> int -> int = add;;",
+             true);
          ]
 
 let rec_let_expr =
@@ -47,6 +52,9 @@ let lambda_expr =
            ( "pass with type",
              "let x : int -> int = fun (y : int) : int => y;;",
              true );
+            ("simple lambda", 
+            "let f = fun (x : int) : int => x + 1;;", 
+            true);
          ]
 
 let expressions = "expressions" >::: [ let_expr; lambda_expr ]
@@ -54,7 +62,12 @@ let expressions = "expressions" >::: [ let_expr; lambda_expr ]
 let functions =
   "function definitions"
   >::: List.map tc_program
-         [ ("id pass", "let f (x : int) : int = x;; let _ = f 2;;", true) ]
+         [ 
+          ("id pass", "let f (x : int) : int = x;; let _ = f 2;;", true);
+          ("param type error", "let inc (x : int) : int = x && true;;", false);
+          ("two params", "let add (x : int) (y : int) : int = x + y;;", true);
+          ("two params type error", "let add (x : bool) (y : bool) : int = x + y;;", false);
+         ]
 
 let all_functions = "functions" >::: [ expressions; functions ]
 
@@ -68,6 +81,9 @@ let recursion =
             ( "good self type",
              "let rec f (x : int) : int = if x < 1 then x else f (x - 1);;",
              true );
+            ( "bad type instructions example", 
+              "let rec f (x : int) : int = if f 0 then x else x + 1;;",
+              false);
          ]
 
 let all_recur = "recursion" >::: [ rec_let_expr; recursion ]
