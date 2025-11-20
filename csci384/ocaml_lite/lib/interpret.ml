@@ -116,7 +116,7 @@ let rec interp_expr (env : context) : expr -> value = function
   | EAnon(_ps, _, _e) -> curry_anon _ps _e env None
 
 (* Helper to curry a let binding into anonymous functions *)
-and curry_anon (ps: params) (e: expr) (env: context) (rname: string option)  =
+and curry_anon (ps: params) (e: expr) (env: context) (rname: string option) : value =
   match ps with
     | [] -> interp_expr env e
     | [Param(x, _)] ->

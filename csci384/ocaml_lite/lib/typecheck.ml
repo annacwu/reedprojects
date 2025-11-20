@@ -30,17 +30,21 @@ let context_to_str (_c : context) : string = String.concat " " (List.map vartype
  * Top-level type inference code *
  *********************************)
 
- (* helper to get the new context with the type of each param in it *)
+(* helper to get the new context with the type of each param in it *)
 let rec typecheck_params (_ps : params) (env: context) : context = match _ps with
   | [] -> env
   | Param(id, t) :: rest -> 
+    (* let _ = print_endline("param: " ^ param_to_str (Param(id, t))) in *)
     let new_env: context = (id, t) :: env in
     typecheck_params rest new_env 
 
-  (* helper to build up the function type for a variable *)
+(* helper to build up the function type for a variable *)
 let rec make_function_typ (_ps : params) (acc: typ) : typ = match _ps with
     [] -> acc
-  | Param(_, Some t) :: rest -> make_function_typ rest (Func(t, acc))
+  | Param(_, Some t) :: rest -> 
+    (* let _ = print_endline("adding function param: " ^ param_to_str (Param(id, Some t))) in
+    let _ = print_endline("making function type: " ^ typ_to_str (acc)) in  *)
+    (Func(t, make_function_typ rest acc))
   | _ -> failwith "expecting params to be typed for now"
 
 let rec typecheck_expr (_e : expr) (env: context) : typ = match _e with
@@ -125,7 +129,7 @@ let rec typecheck_expr (_e : expr) (env: context) : typ = match _e with
     let ps_env = typecheck_params _ps env in 
     let t2 = typecheck_expr _e ps_env in (match _t with 
       | None -> failwith("Should require type for now")
-      | Some t1 -> if t2 = t1 then Func(t1, t2) else raise (TypeError ("Expected " ^ typ_to_str t1)))
+      | Some t1 -> if t2 = t1 then make_function_typ _ps t1 else raise (TypeError ("Expected " ^ typ_to_str t1)))
 
 
 let rec typecheck (p : program) (env: context): unit =

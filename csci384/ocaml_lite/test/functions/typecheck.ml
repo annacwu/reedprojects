@@ -29,6 +29,13 @@ let let_expr =
            ( "curried type", 
              "let add (x : int) (y : int) : int = x + y;; let f : int -> int -> int = add;;",
              true);
+          ( "lyell's test",
+            "let x : int -> bool -> int = let f (y : int) (z : bool) : int = if z then y else y + 1 in f;;",
+            true
+          );
+          ("greg fail test",
+          "let x : int -> int = fun (y : bool) : int => if y then 1 else 2;;",
+          false);
          ]
 
 let rec_let_expr =
@@ -66,7 +73,8 @@ let functions =
           ("id pass", "let f (x : int) : int = x;; let _ = f 2;;", true);
           ("param type error", "let inc (x : int) : int = x && true;;", false);
           ("two params", "let add (x : int) (y : int) : int = x + y;;", true);
-          ("two params type error", "let add (x : bool) (y : bool) : int = x + y;;", false);
+          ("two params type error", "let add (x : bool) (y : bool) : int = x + y;;", false); 
+          ("greg test", "let f (x : int -> int) (y : int) : int = x (x y);; let _ = f (fun (x : int) : int => x + 1) 0;;", true);
          ]
 
 let all_functions = "functions" >::: [ expressions; functions ]
