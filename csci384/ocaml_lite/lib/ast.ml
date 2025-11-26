@@ -1,8 +1,7 @@
 (** This module defines a number of types which represent OCaml-lite code. *)
 
 type id = string
-(** An identifer in OCaml-lite. We'll use this when we add let-bindings to the
-    language. *)
+(** An identifer in OCaml-lite. *)
 
 type typ =
   | Int
@@ -10,6 +9,10 @@ type typ =
   | Unit
   | String
   | Func of typ * typ
+  | Tup of typ * typ
+  | Mono of id
+  (* type bound by quantifier, and type in which the bound type appears *)
+  | Poly of id * typ
 
 let rec typ_to_str (_t : typ) : string = match _t with
   | Int -> "Int"
@@ -17,6 +20,9 @@ let rec typ_to_str (_t : typ) : string = match _t with
   | Unit -> "()"
   | String -> "String"
   | Func (t1,t2) -> typ_to_str t1 ^ "->" ^ typ_to_str t2
+  | Tup (t1,t2) -> typ_to_str t1 ^ "->" ^ typ_to_str t2
+  | Mono (x) -> x
+  | Poly (x, t) -> "forall " ^ x ^ ". " ^ typ_to_str t
 
 type param = Param of id * typ option
 (** A parameter appearing an an argument list. This will be needed once we add
@@ -29,7 +35,7 @@ let param_name : param -> id = function
 (** Represent a parameter as a string. *)
 let param_to_str : param -> string = function
   | Param(name, t) -> (match t with 
-    | Some tp ->  "(" ^ name ^ ":" ^ typ_to_str tp ^ ")"
+    | Some tp ->  "(" ^ name ^ " : " ^ typ_to_str tp ^ ")"
     | None -> name ^ ")" 
     )
 
@@ -97,6 +103,7 @@ type expr =
   | EUnop of unop * expr  (** <op> e *)
   | EVar of id  (** x *)
   | EConst of constant  (** c *)
+  | ETup of expr * expr
   | ECond of expr * expr * expr (** if/then/else e *)
   | ELet of id * params * typ option * expr * expr
   | ELetRec of id * params * typ option * expr * expr
@@ -110,16 +117,17 @@ let rec expr_to_str : expr -> string = function
   | EUnop (o, a) -> unop_to_str o ^ " (" ^ expr_to_str a ^ ")"
   | EVar v -> v
   | EConst c -> constant_to_str c
-  | ECond (e1, e2, e3) -> "if" ^ expr_to_str e1 ^ "then" ^ expr_to_str e2 ^ "else" ^ expr_to_str e3 
+  | ETup (e1, e2) -> "(" ^ expr_to_str e1 ^ "," ^ expr_to_str e2 ^ ")"
+  | ECond (e1, e2, e3) -> "if " ^ expr_to_str e1 ^ " then " ^ expr_to_str e2 ^ " else " ^ expr_to_str e3 
   | ELet (id, ps, t, e1, e2) -> (match t with 
-    | None -> "let" ^ id ^ params_to_str ps ^ "=" ^ expr_to_str e1 ^ "in" ^ expr_to_str e2
-    | Some typ -> "let" ^ id ^ params_to_str ps ^ ":" ^ typ_to_str typ ^ "=" ^ expr_to_str e1 ^ "in" ^ expr_to_str e2)
+    | None -> "let " ^ id ^ params_to_str ps ^ " = " ^ expr_to_str e1 ^ " in " ^ expr_to_str e2
+    | Some typ -> "let " ^ id ^ params_to_str ps ^ " : " ^ typ_to_str typ ^ " = " ^ expr_to_str e1 ^ " in " ^ expr_to_str e2)
   | ELetRec (id, ps, t, e1, e2) -> (match t with 
-    | None -> "let rec" ^ id ^ params_to_str ps ^ "=" ^ expr_to_str e1 ^ "in" ^ expr_to_str e2
-    | Some typ -> "let rec" ^ id ^ params_to_str ps ^ ":" ^ typ_to_str typ ^ "=" ^ expr_to_str e1 ^ "in" ^ expr_to_str e2)
+    | None -> "let rec " ^ id ^ params_to_str ps ^ " = " ^ expr_to_str e1 ^ " in " ^ expr_to_str e2
+    | Some typ -> "let rec " ^ id ^ params_to_str ps ^ " : " ^ typ_to_str typ ^ " = " ^ expr_to_str e1 ^ " in " ^ expr_to_str e2)
   | EAnon (ps, t, e) -> (match t with
-    | None -> "fun" ^ params_to_str ps ^ "=>" ^ expr_to_str e
-    | Some typ -> "fun" ^ params_to_str ps ^ ":" ^ typ_to_str typ ^ "=>" ^ expr_to_str e)
+    | None -> "fun " ^ params_to_str ps ^ " => " ^ expr_to_str e
+    | Some typ -> "fun " ^ params_to_str ps ^ " : " ^ typ_to_str typ ^ " => " ^ expr_to_str e)
      
 
 (** A top-level binding.  We don't have bindings in the language yet, but my test

@@ -55,7 +55,9 @@ let tc_expr (inp : string * string * typ option) : test =
     let p, r = parse_enter expr prog in
     match r with
     | [] -> (
-        let t = typecheck_expr p [] in
+        let cs, t = typecheck_expr p [] in
+        (* need to unify here if not checking a binding cause otherwise things won't fail *)
+        let _ = unify(cs) in
         match output with
         | None -> assert_failure "Program typechecked but shouldn't have"
         | Some t2 -> assert_bool "Inferred the wrong type" (t == t2))

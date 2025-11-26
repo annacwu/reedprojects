@@ -66,6 +66,7 @@ let expect (exp : token) : token list -> token list = function
         parse_params rest p
       | Colon :: _ -> ps, source
       | Eq :: _ -> ps, source
+      | DoubleArrow :: _ -> ps, source
       | _ -> raise (ParseError ("Unexpected parameters structure: "^  (String.concat " " (List.map tok_to_str source)) ))  
 
 (***************
@@ -206,9 +207,14 @@ let expect (exp : token) : token list -> token list = function
         match rest with
         | RParen :: rest -> (EConst(CUnit), rest)
         | _ ->
-            let (t, r) = parse_bind rest in
-            match r with
-            | RParen :: rest -> (t, rest)
+            let (t1, r) = parse_bind rest in
+             match r with
+            | Comma :: rest -> 
+                let (t2, r2) = parse_bind rest in
+                (match r2 with
+                 | RParen :: rest -> (ETup(t1, t2), rest)
+                 | _ -> raise (ParseError "Expected ) after tuple"))
+            | RParen :: rest -> (t1, rest)
             | _ -> raise (ParseError "Expected )")
       )
     | Int i :: rest -> (EConst(CInt(i)), rest)
@@ -361,17 +367,17 @@ let typ (_src : token list) : typ * token list =
 let binding (_src : token list) : binding * token list = match _src with
     | Let :: Id x :: rest -> 
       let (ps, r1) = parse_params rest [] in (match r1 with
-        | Eq :: rest -> let (e1, r2) = parse_if rest in (BLet(x, ps, None, e1), r2)
+        | Eq :: rest -> let (e1, r2) = parse_bind rest in (BLet(x, ps, None, e1), r2)
         | Colon :: rest -> 
             let typ, next = parse_typ rest in 
-            let (e1, r2) = parse_if next in (BLet(x, ps, Some typ, e1), r2)
+            let (e1, r2) = parse_bind next in (BLet(x, ps, Some typ, e1), r2)
         | _ -> raise (ParseError ("Expected type in upper level binding")))
     | Let :: Rec :: Id x :: rest -> 
       let (ps, r1) = parse_params rest [] in (match r1 with
-        | Eq :: rest -> let (e1, r2) = parse_if rest in (BLetRec(x, ps, None, e1), r2)
+        | Eq :: rest -> let (e1, r2) = parse_bind rest in (BLetRec(x, ps, None, e1), r2)
         | Colon :: rest -> 
             let typ, next = parse_typ rest in 
-            let (e1, r2) = parse_if next in (BLetRec(x, ps, Some typ, e1), r2)
+            let (e1, r2) = parse_bind next in (BLetRec(x, ps, Some typ, e1), r2)
         | _ -> raise (ParseError ("Expected type in upper level binding")))
   | _ -> raise (ParseError("Unexpected expression: " ^ (String.concat " " (List.map tok_to_str _src))))
 
