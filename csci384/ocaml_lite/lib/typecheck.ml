@@ -42,7 +42,7 @@ let rec free_vars (t : typ) : id list =
     (* let _ = print_endline("returning " ^ id) in  *)
   [id]
   | Func(t1, t2) -> free_vars t1 @ free_vars t2
-  | Tup(t1, t2) -> free_vars t1 @ free_vars t2
+  | Tup(l) -> List.concat (List.map free_vars l)
   (* we don't want to say that one of the free variables is the one in the polytype *)
   | Poly(id, t) -> filter (fun v -> v <> id) (free_vars t)
   | _ -> []
@@ -51,6 +51,35 @@ let rec remove_duplicates (lst: 'a list) : 'a list = match lst with
   | [] -> lst
   | head :: tail -> head :: remove_duplicates (List.filter ((<>) head) tail)
 
+(* helper to make sure all of the custom types exist in the context when typechecking a constructor 
+  returns true if all types exist *)
+let rec verify_inner (t : typ) (env: context) : bool = match t with
+  | Tup(l) -> List.for_all (fun tuples -> verify_inner tuples env) l
+  | Func(x, y) -> if verify_inner x env <> false then verify_inner y env else true
+  | Custom(x) -> (match List.assoc_opt x env with
+          | Some _ -> 
+            true
+          | None -> 
+            raise (TypeError("Undefined type constructor " ^ x)))
+  | _ -> true
+
+let add_constructor_to_context (custom_type : typ) (env : context) (cons : constructor)  : context = match cons with
+    | (id, t) -> (match t with 
+      | Some tp -> if verify_inner tp env then (List.append env [(id, Func(tp, custom_type))]) else raise (TypeError("Undefined type constructor"))
+      | None -> List.append env [(id, custom_type)]
+   ) 
+
+let get_return_typ (t : typ) : typ = match t with 
+  | Func(_, ret) -> ret
+  | _ -> t
+
+let get_constructor_var_types (c : id) (env : context) : typ list = 
+  let cons = List.assoc_opt c env in match cons with
+    | Some t -> (match t with 
+      | Func(Tup l, _) -> l
+      | Func (x, _ ) -> [x]
+      | _ -> [])
+    | None -> raise (TypeError ("Could not get variable types becase no type found for constructor " ^ c)) 
 
 (***************
  * Unification *
@@ -79,7 +108,11 @@ let rec unify (cs : constraints) : constraints =
           raise (TypeError "Infinite unification error") 
         else let sub = unify (map id2 t rest) in (Mono(id2), t) :: sub
       | Func(x1, y1), Func(x2, y2) -> unify (rest @ [(x1, x2) ; (y1, y2)])
-      | Tup(x1, y1), Tup(x2, y2) -> unify (rest @ [(x1, x2) ; (y1, y2)])
+      | Tup(l1), Tup(l2) -> 
+        (* let _ = print_endline("length of " ^ typ_to_str (Tup(l1)) ^ " is " ^ string_of_int (List.length l1) ) in 
+        let _ = print_endline("length of " ^ typ_to_str (Tup(l2)) ^ " is " ^ string_of_int (List.length l2) ) in  *)
+        if List.length l1 = List.length l2 then
+        unify (List.combine l1 l2 @ rest) else raise (TypeError("Tuples must have the same number of elements"))
       | t1, t2 -> 
         if t1 = t2 then unify rest 
         else 
@@ -97,7 +130,7 @@ and replace_poly (t : typ) : typ = match t with
 and map_help (var: id) (rep: typ) (t : typ) : typ = match t with
   | Mono(id) -> if id = var then rep else Mono(id) 
   | Func(x, y) -> Func(map_help var rep x, map_help var rep y)
-  | Tup(x, y) -> Tup(map_help var rep x, map_help var rep y) 
+  | Tup(l) -> Tup(List.map (map_help var rep) l) 
   | _ -> t
 
 and map (var: id) (rep: typ) (cs: constraints) : constraints = match cs with
@@ -110,7 +143,7 @@ and map (var: id) (rep: typ) (cs: constraints) : constraints = match cs with
 and occurs_check (var : id) (t : typ) : bool = match t with
     | Mono(id) -> if var = id then true else false
     | Func(x, y) -> if not (occurs_check var x) then occurs_check var y else true
-    | Tup(x, y) -> if not (occurs_check var x) then occurs_check var y else true 
+    | Tup(l) -> if List.exists (occurs_check var) l then true else false 
     | _ -> false
 
 
@@ -127,7 +160,7 @@ let rec sub_help (id : id) (constraints : constraints) : typ option =
       | _ -> sub_help id rest  
       )
 
-let rec substitute (t : typ) (sub : constraints) : typ = 
+let rec substitute (sub : constraints) (t : typ)  : typ = 
   (* let _ = print_endline("substituting " ^ typ_to_str t) in *)
   match t with
   | Mono(id) -> 
@@ -135,14 +168,14 @@ let rec substitute (t : typ) (sub : constraints) : typ =
     (match rep with 
     (* recursively replace it a bunch *)
     | Some t -> 
-      substitute t sub
+      substitute sub t
     (* it didn't have a replacement so it is the same *)
     | None -> Mono(id) 
     )
   | Func(t1, t2) -> 
-    Func(substitute t1 sub, substitute t2 sub)
-  | Tup(t1, t2) -> 
-    Tup(substitute t1 sub, substitute t2 sub)
+    Func(substitute sub t1, substitute sub t2)
+  | Tup(l) -> 
+    Tup(List.map (substitute sub) l)
   | _ -> t 
 
 let rec check_free_context (env: context) (id : id) : bool = 
@@ -180,6 +213,8 @@ let rec typecheck_params (_ps : params) (env: context) : context =
   | Param(id, None) :: rest -> 
     let new_env: context = (id, Mono(fresh_var())) :: env in
     typecheck_params rest new_env 
+
+
 
 (* helper to build up the function type for a variable *)
 let rec make_function_typ (_ps : params) (acc: typ) (env: context) : typ = match _ps with
@@ -232,10 +267,12 @@ let rec typecheck_expr (_e : expr) (env: context) : constraints * typ = match _e
       | UNegate -> let cs : constraints = c @ [(arg, Int)] in cs, Int
       | UNot -> let cs : constraints = c @ [(arg, Bool)] in cs, Bool
     )
-  | EVar(v) -> 
-    let t = List.assoc v env in 
+  | EVar(v) ->
+    let t = (match List.assoc_opt v env with
+      | Some typ -> typ
+      | None -> raise (TypeError ("Undefined variable " ^ v))) in
     (* need fresh variables for polytype when looking it up *)
-    let gen = replace_poly t in 
+    let gen = replace_poly t in
     [], gen
   | EConst(_c) -> (match _c with 
     | CInt _ -> [], Int
@@ -243,10 +280,11 @@ let rec typecheck_expr (_e : expr) (env: context) : constraints * typ = match _e
     | CUnit -> [], Unit
     | CString _ -> [], String
     )
-  | ETup(_e1, _e2) -> 
-    let c1, t1 = typecheck_expr _e1 env in
-    let c2, t2 = typecheck_expr _e2 env in 
-    (c1 @ c2, Tup(t1, t2))
+  | ETup(_l) ->
+      let rec help (l : expr list) (c_acc : constraints) (tup : typ list) : constraints * typ = (match l with
+    | t :: r -> let c1, t1 = typecheck_expr t env in help r (c_acc @ c1) (tup @ [t1])
+    | [] -> c_acc, Tup(tup))
+    in let cs, t1 = help _l [] [] in (cs, t1)
   | ECond(_e1, _e2, _e3) -> 
     let c1, cond = typecheck_expr _e1 env in
     let c2, body = typecheck_expr _e2 env in
@@ -262,9 +300,9 @@ let rec typecheck_expr (_e : expr) (env: context) : constraints * typ = match _e
       *)
       let map = unify(cs) in 
       (* substitute the type we want to finish unifying into environment and type *)
-      let sub_env = List.map (fun (id, t) -> (id, substitute t map)) env in
+      let sub_env = List.map (fun (id, t) -> (id, substitute map t)) env in
       (* let _ = print_endline("mapping: " ^ constraints_to_str map) in  *)
-      let sub_type = substitute ftype map in 
+      let sub_type = substitute map ftype in 
       (* let _ = print_endline("got subtype: " ^ typ_to_str sub_type) in *)
       let free_v = remove_duplicates (free_vars sub_type) in 
       (* see if the variable is free in the context, and if it is (returned true) then add to context as is *)
@@ -286,8 +324,8 @@ let rec typecheck_expr (_e : expr) (env: context) : constraints * typ = match _e
       let map = unify(cs) in
       (* let _ = print_endline("mapping: " ^ constraints_to_str map) in  *)
       (* substitute the type we want to finish unifying *)
-      let sub_env = List.map (fun (id, t) -> (id, substitute t map)) env in
-      let sub_type = substitute func_type map in 
+      let sub_env = List.map (fun (id, t) -> (id, substitute map t)) env in
+      let sub_type = substitute map func_type  in 
       (* let _ = print_endline("got subtype: " ^ typ_to_str sub_type) in *)
       let free_v = remove_duplicates (free_vars sub_type) in 
       (* see if the variable is free in the context, and if it is (returned true) then add to context as is *)
@@ -311,7 +349,43 @@ let rec typecheck_expr (_e : expr) (env: context) : constraints * typ = match _e
       | None -> 
          (* let _ = print_endline("got here " ^ typ_to_str ftype) in  *)
         cs, ftype)
-
+  | EMatch(_e, _p) -> 
+    (* helper for typechecking match expressions *)
+    let rec typecheck_patterns (e_type : typ) (_p : pattern list) (env : context) (cs : constraints) : constraints * typ = match _p with
+      | [] -> raise (TypeError "Expected pattern")
+      | [(id, vars, e)] ->
+          let cons_type = List.assoc_opt id env in
+          let ret_type = (match cons_type with
+            | Some t -> get_return_typ t
+            | None -> raise (TypeError ("No type found for constructor " ^ id)) ) in 
+          let cons_vars = get_constructor_var_types id env in 
+          if (List.length cons_vars <> List.length vars) then raise (TypeError ("Constructor " ^ id ^ " expects a different number of variables")) else
+          let var_types = List.combine vars cons_vars in 
+          let var_env : context = var_types @ env in 
+          let c1, t1 = typecheck_expr e var_env in 
+          let new_cs = cs @ [(e_type, ret_type)] @ c1 in 
+          new_cs, t1
+      | (id, vars, e) :: rest -> 
+          let cons_type = List.assoc_opt id env in 
+          (* get return type of the constructor *)
+          let ret_type = (match cons_type with
+            | Some t -> get_return_typ t
+            | None -> raise (TypeError ("No type found for constructor " ^ id)) ) in 
+          (* get the types expected of the constructor arguments *)
+          let cons_vars = get_constructor_var_types id env in 
+          if (List.length cons_vars <> List.length vars) then raise (TypeError ("Constructor " ^ id ^ " expects a different number of variables")) else
+          (* make the constraints for the arguments *)
+          let var_types = List.combine vars cons_vars in 
+          let var_env : context = var_types @ env in 
+          (* typecheck the body *)
+          let c1, t1 = typecheck_expr e var_env in
+          let next_cs, next_t = typecheck_patterns e_type rest env cs in 
+          (* add constraint that return type is same as match expression type, constraints from body typecheck, constraints from next body, and that the types of this body and next body must match *)
+          let new_cs = cs @ [(e_type, ret_type)] @ c1 @ next_cs @ [(t1, next_t)] in 
+          new_cs, t1
+    in let body_cs, body_type = typecheck_expr _e env in 
+    let cs, t = typecheck_patterns body_type _p env body_cs in 
+    cs, t
 (*********************************
  * Top-level type inference code *
  *********************************)
@@ -322,11 +396,12 @@ let rec typecheck (p : program) (env: context): unit =
   | BLet(id, ps, typ, expr) :: rest -> 
     (* let _ = print_endline("\n binding: " ^ binding_to_str (BLet(id, ps, typ, expr))) in *)
     let cs, ftype = typecheck_expr (EAnon(ps, typ, expr)) ready_env in
+    (* let _ = print_endline("function type is " ^ typ_to_str (ftype)) in  *)
     let map = unify(cs) in
     (* let _ = print_endline("mapping: " ^ constraints_to_str map) in  *)
-    let sub_env = List.map (fun (id, t) -> (id, substitute t map)) env in
+    let sub_env = List.map (fun (id, t) -> (id, substitute map t)) env in
     (* let _ = print_endline("mapping: " ^ constraints_to_str map) in  *)
-    let sub_type = substitute ftype map in 
+    let sub_type = substitute map ftype in 
     (* let _ = print_endline("got subtype: " ^ typ_to_str sub_type) in *)
     let free_v = remove_duplicates (free_vars sub_type) in 
     (* see if the variable is free in the context, and if it is (returned true) then add to context as is *)
@@ -335,23 +410,28 @@ let rec typecheck (p : program) (env: context): unit =
     (* otherwise, add the generalized type to context *)
     else let temp : context = (id, generalize free_v sub_type) :: sub_env in temp in
     let res = typecheck rest new_env in res
-  | BLetRec(id, ps, typ, expr) :: rest -> 
+  | BLetRec(id, ps, typ, expr) :: rest ->
     let rec_type = (match typ with
-      | Some t -> t  
-      | None -> Mono(fresh_var())) 
-    in let ps_env = typecheck_params ps ready_env in  
-    let func_env = (id, make_function_typ ps rec_type ps_env) :: ps_env in 
+      | Some t -> t
+      | None -> Mono(fresh_var()))
+    in let ps_env = typecheck_params ps ready_env in
+    let func_type = make_function_typ ps rec_type ps_env in
+    let func_env = (id, func_type) :: ps_env in
     let c1, ftype = typecheck_expr expr func_env in
     let cs = c1 @ [(ftype, rec_type)] in
     let map = unify(cs) in
-    let sub_env = List.map (fun (id, t) -> (id, substitute t map)) env in
-    let sub_type = substitute ftype map in 
+    let sub_env = List.map (fun (id, t) -> (id, substitute map t)) env in
+    let sub_type = substitute map func_type in
     (* let _ = print_endline("got subtype: " ^ typ_to_str sub_type) in *)
-    let free_v = remove_duplicates (free_vars sub_type) in 
+    let free_v = remove_duplicates (free_vars sub_type) in
     (* see if the variable is free in the context, and if it is (returned true) then add to context as is *)
-    let new_env = if (check_all_context env free_v) 
-      then let temp : context = (id, sub_type) :: sub_env in temp 
+    let new_env = if (check_all_context env free_v)
+      then let temp : context = (id, sub_type) :: sub_env in temp
     (* otherwise, add the generalized type to context *)
     else let temp : context = (id, generalize free_v sub_type) :: sub_env in temp in
     let res = typecheck rest new_env in res
+  | ADT(id, cons) :: rest -> 
+    let adt_type = Custom(id) in
+    let new_env = List.fold_left (fun acc c -> add_constructor_to_context adt_type acc c) ((id, adt_type) :: env) cons in
+    typecheck rest new_env
   | [] -> ()

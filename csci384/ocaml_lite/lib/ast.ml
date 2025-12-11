@@ -9,10 +9,11 @@ type typ =
   | Unit
   | String
   | Func of typ * typ
-  | Tup of typ * typ
+  | Tup of typ list
   | Mono of id
   (* type bound by quantifier, and type in which the bound type appears *)
   | Poly of id * typ
+  | Custom of id
 
 let rec typ_to_str (_t : typ) : string = match _t with
   | Int -> "Int"
@@ -20,13 +21,13 @@ let rec typ_to_str (_t : typ) : string = match _t with
   | Unit -> "()"
   | String -> "String"
   | Func (t1,t2) -> typ_to_str t1 ^ "->" ^ typ_to_str t2
-  | Tup (t1,t2) -> typ_to_str t1 ^ "->" ^ typ_to_str t2
+  | Tup l -> "(" ^ String.concat " * " (List.map typ_to_str l) ^ ")"
   | Mono (x) -> x
   | Poly (x, t) -> "forall " ^ x ^ ". " ^ typ_to_str t
+  | Custom (s) -> s
 
 type param = Param of id * typ option
-(** A parameter appearing an an argument list. This will be needed once we add
-    functions. *)
+(** A parameter appearing an an argument list. *)
 
 (** Get the name of a parameter. *)
 let param_name : param -> id = function 
@@ -103,11 +104,14 @@ type expr =
   | EUnop of unop * expr  (** <op> e *)
   | EVar of id  (** x *)
   | EConst of constant  (** c *)
-  | ETup of expr * expr
+  | ETup of expr list 
   | ECond of expr * expr * expr (** if/then/else e *)
   | ELet of id * params * typ option * expr * expr
   | ELetRec of id * params * typ option * expr * expr
   | EAnon of params * typ option * expr
+  | EMatch of expr * pattern list
+and pattern = id * id list * expr
+
 
 (** Represent an expression as a string. *)
 let rec expr_to_str : expr -> string = function
@@ -117,7 +121,7 @@ let rec expr_to_str : expr -> string = function
   | EUnop (o, a) -> unop_to_str o ^ " (" ^ expr_to_str a ^ ")"
   | EVar v -> v
   | EConst c -> constant_to_str c
-  | ETup (e1, e2) -> "(" ^ expr_to_str e1 ^ "," ^ expr_to_str e2 ^ ")"
+  | ETup l -> "(" ^ String.concat " , " (List.map expr_to_str l) ^ ")"
   | ECond (e1, e2, e3) -> "if " ^ expr_to_str e1 ^ " then " ^ expr_to_str e2 ^ " else " ^ expr_to_str e3 
   | ELet (id, ps, t, e1, e2) -> (match t with 
     | None -> "let " ^ id ^ params_to_str ps ^ " = " ^ expr_to_str e1 ^ " in " ^ expr_to_str e2
@@ -128,12 +132,31 @@ let rec expr_to_str : expr -> string = function
   | EAnon (ps, t, e) -> (match t with
     | None -> "fun " ^ params_to_str ps ^ " => " ^ expr_to_str e
     | Some typ -> "fun " ^ params_to_str ps ^ " : " ^ typ_to_str typ ^ " => " ^ expr_to_str e)
-     
+  | EMatch (e, l) -> "match " ^ expr_to_str e ^ " with " ^ match_to_str l 
 
-(** A top-level binding.  We don't have bindings in the language yet, but my test
-    code is more consistent if we artificially wrap expressions in a single
-    top-level binding from the beginning. *)
-type binding = BLet of id * params * typ option * expr | BLetRec of id * params * typ option * expr
+
+and pattern_to_str : (pattern) -> string = function
+  | (p, vs, e) ->  (match vs with 
+    | [] -> "| " ^ p ^ " => " ^ expr_to_str e 
+    | [v] -> "| " ^ p ^ " " ^ v ^ " => " ^ expr_to_str e
+    | _ :: _ -> "| " ^ p ^ " (" ^ String.concat " , " vs ^ ") => " ^ expr_to_str e 
+    )
+and match_to_str (m : pattern list) : string =
+  String.concat " " (List.map pattern_to_str m)
+
+(** A top-level binding. *)
+type binding = BLet of id * params * typ option * expr 
+| BLetRec of id * params * typ option * expr 
+| ADT of id * constructor list 
+and constructor = (id * typ option)
+
+let constructor_to_str : (id * typ option) -> string = function
+  | (id, t) -> (match t with 
+    | Some tp ->  "|" ^ id ^ " of " ^ typ_to_str tp 
+    | None -> "|" ^ id 
+    )
+let adt_to_str (adt : (id * typ option) list) : string =
+  String.concat " " (List.map constructor_to_str adt)
 
 (** Represent a binding as a string. *)
 let binding_to_str : binding -> string = function
@@ -149,9 +172,10 @@ let binding_to_str : binding -> string = function
       in
       "let rec " ^ id ^ " " ^ params_to_str ps ^ tystr ^ " = (" ^ expr_to_str e
       ^ ")" 
+  | ADT (id, l) -> "type " ^ id ^ adt_to_str l
 
-type program = binding list
 (** An OCaml-lite program. *)
+type program = binding list
 
 (** Represent a program as a string. *)
 let program_to_str (p : program) : string =

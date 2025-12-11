@@ -49,6 +49,7 @@ let rec_let_expr =
            ( "let rec fail",
              "let rec f x = if f (x - 1) < 0 then true else false;;",
              false );
+          ("greg's rec", "let rec fact (x : int) : int = if x = 0 then 1 else x * fact (x - 1);; let _ = fact 2;;", true);
          ]
 
 let lambda_expr =
@@ -71,6 +72,7 @@ let functions =
           ("two params", "let add x y = x + y;;", true);
           ("two params type error", "let add x (y : bool) = x + y;;", false); 
           ("greg test", "let f x y = x (x y);; let _ = f (fun x => x + 1) 0;;", true);
+          ("id fail", "let f x = x;; let _ = f true false;;", false);
      ]
 
 let all_functions = "functions" >::: [ expressions; functions ]

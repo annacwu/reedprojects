@@ -8,12 +8,13 @@ type value =
   | VBool of bool (** A boolean value. *)
   | VUnit (** A unit value. *)
   | VString of string (** A string value. *)
+  | VTup of value list
   | VBuiltin 
   | VClosure of string * expr * context * string option
+  | VConstructor of id * value list
 
 (** A context in which to evaluate an expression. *)
 and context = (id * value) list
-
 
 let rec var_to_str : (id * value) -> string = function
   | (id, v) -> "(" ^ id ^ ", " ^ value_to_str v ^ ")"
@@ -26,10 +27,12 @@ and value_to_str : value -> string = function
   | VBool b -> string_of_bool b
   | VUnit -> "()"
   | VString s -> s
+  | VTup l -> "(" ^ String.concat " , " (List.map value_to_str l) ^ ")"
   | VBuiltin -> "built in"
   | VClosure(x, e , c, r) -> (match r with 
     | None -> "let " ^ x ^ " = " ^ expr_to_str e ^ "in " ^ context_to_str c 
     | Some s -> "let " ^ s ^ " " ^ x ^ " = " ^ expr_to_str e ^ "in " ^ context_to_str c )
+  | VConstructor(c, v) ->  c ^ "(" ^ String.concat ", " (List.map value_to_str v) ^ ")"
 
 
 exception RuntimeError of string
@@ -58,7 +61,10 @@ let rec interp_expr (env : context) : expr -> value = function
               | None -> new_env
               | Some s -> (s, v1) :: new_env)
             in interp_expr final_env e
-        | _ -> raise (RuntimeError "Expected closure"))
+        | VConstructor(id, []) -> (match v2 with
+          | VTup l ->  VConstructor(id, l)
+          | _ -> VConstructor(id, [v2])) 
+        | _ -> raise (RuntimeError ("Unexpected application: " ^ value_to_str v1)))
   | EBinop (_l, _o, _r) -> 
     let left = interp_expr env _l in
     let right = interp_expr env _r in
@@ -114,6 +120,26 @@ let rec interp_expr (env : context) : expr -> value = function
     | ps -> let v1 = curry_anon  ps _e1 env (Some _id)in 
     interp_expr ((_id, v1) :: env) _e2)
   | EAnon(_ps, _, _e) -> curry_anon _ps _e env None
+  | ETup(_l) -> VTup(List.map (interp_expr env) _l)
+  | EMatch(_e, _p) -> 
+    let rec interpret_patterns (m : value) (p : pattern list) (env : context) = match p with
+       | [(id, vars, e)] -> (match m with 
+        | VConstructor (c_name, c_vars) -> 
+            if c_name = id then 
+              let bound_vars = List.combine vars c_vars in 
+              let res = interp_expr (bound_vars @ env) e in res
+            else raise (RuntimeError("Constructor " ^ value_to_str m ^ " did not match any pattern"))  
+            | _ -> raise (RuntimeError("Expected constructor"))) 
+       | (id, vars, e) :: rest -> (match m with 
+        | VConstructor (c_name, c_vars) -> 
+            if c_name = id then 
+              let bound_vars = List.combine vars c_vars in 
+              let res = interp_expr (bound_vars @ env) e in res
+            else interpret_patterns m rest env  
+            | _ -> raise (RuntimeError("Expected constructor")))
+      | _ -> raise (RuntimeError ("No matching pattern"))
+    in let v = interp_expr env _e in 
+    interpret_patterns v _p env
 
 (* Helper to curry a let binding into anonymous functions *)
 and curry_anon (ps: params) (e: expr) (env: context) (rname: string option) : value =
@@ -137,6 +163,10 @@ let interp_binding (env : context) : binding -> context = function
       let new_env: context = (_id, v1) :: env in new_env
     | ps -> let v1 = curry_anon  ps _e1 env (Some _id) in 
     (_id, v1) :: env) 
+  | ADT(_id, _cons) -> 
+    let generate_constructors (c : constructor) (env : context ) = match c with 
+      | id, _ -> (id, VConstructor(id, [])) :: env
+    in (List.fold_left (fun acc c -> generate_constructors c acc) env _cons)
 
 (** Interpret a program. This just means interpreting all top-level bindings in
     order. *)
