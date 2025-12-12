@@ -60,6 +60,13 @@ let match_tests =
           ("recursive pattern", 
            "type int_list = | Nil | Cons of int * int_list ;; 
             let rec f lst = match lst with | Nil => 0 | Cons (head, tail) => head + f (tail) ;;", true);
+          ("double definition",
+          "type one = | Nil ;;
+          type two = | Nil ;;
+          let x : one = Nil ;;", true);
+          ("empty match", 
+           "type int_list = | Nil | Cons of int * int_list ;; 
+            let f lst = match lst with | Cons (head, tail) => head + 1 | _ => 0 ;;", true);
          ]
 
 let tc_tests : test = "typecheck tests" >::: [tuple_tests; adt_tests; match_tests]

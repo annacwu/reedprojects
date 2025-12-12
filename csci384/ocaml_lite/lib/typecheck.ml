@@ -354,6 +354,11 @@ let rec typecheck_expr (_e : expr) (env: context) : constraints * typ = match _e
     let rec typecheck_patterns (e_type : typ) (_p : pattern list) (env : context) (cs : constraints) : constraints * typ = match _p with
       | [] -> raise (TypeError "Expected pattern")
       | [(id, vars, e)] ->
+         if id = "_" then
+          let c1, t1 = typecheck_expr e
+  env in
+          cs @ c1, t1
+        else
           let cons_type = List.assoc_opt id env in
           let ret_type = (match cons_type with
             | Some t -> get_return_typ t
@@ -366,6 +371,16 @@ let rec typecheck_expr (_e : expr) (env: context) : constraints * typ = match _e
           let new_cs = cs @ [(e_type, ret_type)] @ c1 in 
           new_cs, t1
       | (id, vars, e) :: rest -> 
+        if id = "_" then
+          let c1, t1 = typecheck_expr e
+  env in
+          let next_cs, next_t =
+  typecheck_patterns e_type rest env cs
+  in
+          let new_cs = cs @ c1 @ next_cs
+  @ [(t1, next_t)] in
+          new_cs, t1
+        else
           let cons_type = List.assoc_opt id env in 
           (* get return type of the constructor *)
           let ret_type = (match cons_type with

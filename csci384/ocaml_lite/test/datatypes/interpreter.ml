@@ -68,7 +68,14 @@ let pattern_matching =
              | Nil => 0
              | Cons(head, tail) => head + sum tail ;;
              let res = sum lst ;;",
-             "Couldn't apply function in body")
+             "Couldn't apply function in body");
+            ("empty match", 
+            check_val "res" (VInt 1),
+            "type int_list = | Nil | Cons of int * int_list ;;
+             let lst = Nil;;
+             let res = match lst with
+             | Cons(head, tail) => head
+             | _ => 1 ;;", "couldn't match with _");
          ]
 
 

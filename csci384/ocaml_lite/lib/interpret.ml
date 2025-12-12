@@ -123,14 +123,19 @@ let rec interp_expr (env : context) : expr -> value = function
   | ETup(_l) -> VTup(List.map (interp_expr env) _l)
   | EMatch(_e, _p) -> 
     let rec interpret_patterns (m : value) (p : pattern list) (env : context) = match p with
-       | [(id, vars, e)] -> (match m with 
+       | [(id, vars, e)] -> 
+        if id = "_" then
+           interp_expr env e
+         else (match m with 
         | VConstructor (c_name, c_vars) -> 
             if c_name = id then 
               let bound_vars = List.combine vars c_vars in 
               let res = interp_expr (bound_vars @ env) e in res
             else raise (RuntimeError("Constructor " ^ value_to_str m ^ " did not match any pattern"))  
             | _ -> raise (RuntimeError("Expected constructor"))) 
-       | (id, vars, e) :: rest -> (match m with 
+       | (id, vars, e) :: rest -> if id = "_" then
+           interp_expr env e
+         else (match m with 
         | VConstructor (c_name, c_vars) -> 
             if c_name = id then 
               let bound_vars = List.combine vars c_vars in 
